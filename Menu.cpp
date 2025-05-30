@@ -1,4 +1,5 @@
 #include "Menu.h"
+#include"GameState.h"
 #include <graphics.h> // EasyX头文件
 #include <conio.h>
 #include <cmath> 
@@ -24,52 +25,30 @@ void Menu::Update() {
         char ch = _getch();
         if (state == MENU_MAIN) {
             //处理主菜单的选择
-            if (ch == 'w' && selectedOption > 0) selectedOption--;
-            if (ch == 's' && selectedOption < 2) selectedOption++;
-            if (ch == '\r') {
+            if (ch == 'w' && selectedOption > 0)
+                selectedOption--;
+            if (ch == 's' && selectedOption < 2) 
+                selectedOption++;
+            if (ch == '\r')
                 handleMainMenuSelect();
-            }
         }
         else if (state == MENU_START) {
             // 处理三种模式的选择
-            if (ch == 'w' && selectedOption > 0) selectedOption--;
-            if (ch == 's' && selectedOption < 3) selectedOption++;
-            if (ch == '\r') {
-                // 处理选项
-                if (selectedOption == 0) {
-                    // 双人对战
-                }
-                else if (selectedOption == 1) {
-                    // 人机对战
-                }
-                else if (selectedOption == 2) {
-                    // 练习模式
-                }
-                else if (selectedOption == 3) {
-                    // 返回主菜单
-                    state = MENU_MAIN;
-                    selectedOption = 0; // 重置选项
-                }
-            }
+            if (ch == 'w' && selectedOption > 0)
+                selectedOption--;
+            if (ch == 's' && selectedOption < 3)
+                selectedOption++;
+            if (ch == '\r')
+                handleStartGameSelect();
         }
         else if (state == MENU_SETTINGS) {
             // 处理设置菜单的选择
-            if (ch == 'w' && selectedOption > 0) selectedOption--;
-            if (ch == 's' && selectedOption < 2) selectedOption++;
-            if (ch == '\r') {
-                // 处理设置选项
-                if (selectedOption == 0) {
-                    // 音效设置
-                }
-                else if (selectedOption == 1) {
-                    // 对战设置
-                }
-                else if (selectedOption == 2) {
-                    // 返回主菜单
-                    state = MENU_MAIN;
-                    selectedOption = 0; // 重置选项
-                }
-            }
+            if (ch == 'w' && selectedOption > 0) 
+                selectedOption--;
+            if (ch == 's' && selectedOption < 2) 
+                selectedOption++;
+            if (ch == '\r') 
+                handleSettingsSelect();
         }
     }
 }
@@ -87,8 +66,8 @@ void Menu::drawMainMenu(int frame) {
     putimage(0, 0, &background);
     
     // 标题配色
-    COLORREF color1 = RGB(0, 255, 255);   // 青绿
-    COLORREF color2 = RGB(255, 0, 255);   // 粉紫
+    COLORREF color1 = RGB(0, 255, 255); 
+    COLORREF color2 = RGB(255, 0, 255);   
     COLORREF color3 = RGB(155, 255, 0); 
 
     //动态设置偏移量
@@ -131,6 +110,7 @@ void Menu::drawStartMenu() {
     loadimage(&background, _T("rec/background2.png"), 1200, 600, 1);
     putimage(0, 0, &background);
     settextcolor(WHITE);
+    settextstyle(45, 20, _T("Arial Black"));
     outtextxy(450, 200, _T("请选择游戏模式"));
     outtextxy(450, 250, selectedOption == 0 ? _T(">> 双人对战 <<") : _T("     双人对战"));
     outtextxy(450, 300, selectedOption == 1 ? _T(">> 人机对战 <<") : _T("     人机对战"));
@@ -144,7 +124,8 @@ void Menu::drawSettingsMenu() {
     loadimage(&background, _T("rec/background3.png"), 1200, 600, 1);
     putimage(0, 0, &background);
     settextcolor(WHITE);
-    outtextxy(430, 120, _T("     游戏设置"));
+    settextstyle(45, 20, _T("Arial Black"));
+    outtextxy(430, 120, _T("请选择游戏设置"));
     outtextxy(430, 170, selectedOption == 0 ? _T(">> 音效设置 <<") : _T("     音效设置"));
     outtextxy(430, 220, selectedOption == 1 ? _T(">> 对战设置 <<") : _T("     对战设置"));
     outtextxy(430, 270, selectedOption == 2 ? _T(">> 返回主菜单 <<") : _T("     返回主菜单"));
@@ -259,20 +240,23 @@ void Menu::handleMainMenuSelect() {
 }
 // 菜单选中逻辑
 void Menu::handleStartGameSelect() {
-    if (selectedOption == 0) {
-        
+    if (selectedOption == 0) 
+        lastSelectedGameMode = GameMode::PVP;
+    else if (selectedOption == 1) 
+        lastSelectedGameMode = GameMode::PVE;
+    else if (selectedOption == 2)
+        lastSelectedGameMode = GameMode::PRACTICE;
+    else if (selectedOption == 3) { 
+        state = MENU_MAIN;
+        selectedOption = 0;
     }
-    else if (selectedOption == 1) {
-       
-    }
-    else if (selectedOption == 2) {
-        
-    }
-	else if (selectedOption == 3) {
-		state = MENU_MAIN;
-		selectedOption = 0; // 重置选项
-	}
 }
+GameMode Menu::GetAndClearLastGameModeSelected() {
+    GameMode tmp = lastSelectedGameMode;
+    lastSelectedGameMode = GameMode::NONE;
+    return tmp;
+}
+
 void Menu::handleSettingsSelect() {
     if (selectedOption == 0) {
 

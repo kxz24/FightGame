@@ -1,6 +1,6 @@
 #pragma once
 #include <graphics.h> // EasyX 头文件
-
+#include"GameState.h"
 enum MenuState {
     MENU_MAIN,
     MENU_START,
@@ -20,6 +20,7 @@ public:
     void Draw();
     void Update();
     MenuState GetState() const;
+    GameMode GetAndClearLastGameModeSelected();
 private:
     MenuState state;
     int frame = 0; // 用于动画效果
@@ -39,5 +40,5 @@ private:
 	// 其他菜单选项确认
 	void handleStartGameSelect();
 	void handleSettingsSelect();
-
+    GameMode lastSelectedGameMode = GameMode::NONE;
 };
