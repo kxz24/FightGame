@@ -41,10 +41,17 @@ void Character::setAction(CharacterAction action) {
 void Character::setKeyState(int key, bool pressed) {
     if (key == 'a' || key == 'A') leftPressed = pressed;
     if (key == 'd' || key == 'D') rightPressed = pressed;
+    if ((key == 'w' || key == 'W') && pressed) {
+        if (!isJumping && !isDefending) {
+            startJump();
+        }
+    }
 
-    // 速度和朝向
+    // 如果正在跳跃或防御，禁止其他动作切换
+    if (isJumping || isDefending) return;
+
     if (leftPressed && !rightPressed) {
-        vx_ = -8 ;
+        vx_ = -8;
         setFacingRight(false);
         setAction(CharacterAction::WALK);
     }
@@ -58,7 +65,6 @@ void Character::setKeyState(int key, bool pressed) {
         setAction(CharacterAction::IDLE);
     }
 }
-
 // AI控制逻辑，当前仅设置为静止状态
 void Character::aiControl() {
     setAction(CharacterAction::IDLE);
@@ -88,6 +94,18 @@ void Character::render() {
         else
             img = &idleImagesLeft[frameIdx];
     }
+    else if (currentAction_ == CharacterAction::JUMP && isJumping) {
+        int imgIdx = 0;
+        if (jumpFrameIndex < 3)        imgIdx = 0;
+        else if (jumpFrameIndex < 6)   imgIdx = 1;
+        else if (jumpFrameIndex < 9)   imgIdx = 2;
+        else if (jumpFrameIndex < 12)  imgIdx = 3;
+        else                           imgIdx = 4;
+        if (facingRight_)
+            img = &jumpImagesRight[imgIdx];
+        else
+            img = &jumpImagesLeft[imgIdx];
+    }
     putimage_alpha(static_cast<int>(x_), static_cast<int>(y_), img);
     settextcolor(WHITE);
     settextstyle(18, 0, "Arial");
@@ -109,7 +127,7 @@ void Character::update(float deltaTime) {
         frameCount_++;
         animFrameCounter = 0;
     }
-	// 计算防御帧数
+    // 计算防御帧数
     if (currentAction_ == CharacterAction::DEFEND && isDefending) {
         defendAnimCounter++;
         if (defendAnimCounter >= 2) { // 每2帧切换一次
@@ -122,17 +140,45 @@ void Character::update(float deltaTime) {
             setAction(CharacterAction::IDLE);
         }
     }
-    // 更新角色位置
-    //这里实在不想写怎么限制角色的位置的逻辑了，于是乎用了最简单粗暴的办法，看起来效果不错
-    else {
+    // 处理跳跃逻辑
+    if (currentAction_ == CharacterAction::JUMP && isJumping) {
+        jumpFrameIndex++;
+        y_ += jumpVY;
+        jumpVY += gravity;
         if (x_ >= 100 && x_ <= 850)
             x_ += vx_ * deltaTime * 60;
         else if (x_ < 100)
             x_ = 101;
         else if (x_ > 850)
             x_ = 849;
-        y_ += vy_ * deltaTime * 60;
+        // 落地或帧数到达
+        if (jumpFrameIndex >= jumpTotalFrames || y_ >= jumpStartY) {
+            isJumping = false;
+            if (leftPressed && !rightPressed) {
+                vx_ = -8;
+                setFacingRight(false);
+                setAction(CharacterAction::WALK);
+            }
+            else if (!leftPressed && rightPressed) {
+                vx_ = 8;
+                setFacingRight(true);
+                setAction(CharacterAction::WALK);
+            }
+            else {
+                vx_ = 0;
+                setAction(CharacterAction::IDLE);
+            }
+        }
+        return;
     }
+    // 更新角色位置
+    //这里实在不想写怎么限制角色的位置的逻辑了，于是乎用了最简单粗暴的办法，看起来效果不错
+    if (x_ >= 100 && x_ <= 850)
+        x_ += vx_ * deltaTime * 60;
+    else if (x_ < 100)
+        x_ = 101;
+    else if (x_ > 850)
+        x_ = 849;
 }
 
 void Character::setHP(int hp) { hp_ = hp; }
@@ -165,6 +211,14 @@ void Character::loadImages() {
         std::string filename = "rec/defend/defend" + std::to_string(i + 1) + ".png";
         loadimage(&defendImagesRight[i], filename.c_str(), 225, 200, true);
     }
+    for (int i = 0; i < 5; ++i) {
+        std::string filename = "rec/jump_left/jump" + std::to_string(i + 1) + ".png";
+        loadimage(&jumpImagesLeft[i], filename.c_str(), 225, 200, true);
+    }
+    for (int i = 0; i < 5; ++i) {
+        std::string filename = "rec/jump_right/jump" + std::to_string(i + 1) + ".png";
+        loadimage(&jumpImagesRight[i], filename.c_str(), 225, 200, true);
+    }
 }
 
 //从b站up主Voidmatrix的教程中学习了putimage_alpha函数的实现
@@ -185,4 +239,15 @@ void Character::startDefend() {
         defendAnimCounter = 0;
         vx_ = 0; // 防御时不移动
     }
+}
+//跳跃
+
+
+void Character::startJump() {
+    if (isJumping) return;
+    isJumping = true;
+    setAction(CharacterAction::JUMP);
+    jumpFrameIndex = 0;
+    jumpStartY = y_;
+    jumpVY = -7 * gravity; 
 }

@@ -40,6 +40,9 @@ public:
    
     void startDefend();
     bool getIsDefending() const; // 提供给判定是否防御中
+
+    bool getIsJumping() const { return isJumping; }
+    void startJump();
 private:
     float x_, y_;
     float vx_, vy_;
@@ -66,4 +69,13 @@ private:
     int defendAnimCounter = 0;      // 控制每两帧切换一次
 	IMAGE defendImagesLeft[6];          // 防御动画帧
 	IMAGE defendImagesRight[6];         // 防御动画帧
+	//跳跃
+    bool isJumping = false;
+    int jumpFrameIndex = 0;
+    const int jumpTotalFrames = 15;
+    float jumpStartY = 0;
+    float jumpVY = 0;
+    const float gravity = 3.0f;
+    IMAGE jumpImagesLeft[5];
+    IMAGE jumpImagesRight[5];
 };

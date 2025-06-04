@@ -20,8 +20,10 @@ int main() {
 
     auto prevTime = std::chrono::steady_clock::now();
 
-    bool aDownLast = false, dDownLast = false;
+    bool aDownLast = false;
+    bool dDownLast = false;
     bool sDownLast = false;
+    bool wDownLast = false;
 
     while (true) {
         auto frameStart = std::chrono::steady_clock::now();
@@ -43,6 +45,11 @@ int main() {
             bool aDown = (GetAsyncKeyState('A') & 0x8000) || (GetAsyncKeyState('a') & 0x8000);
             bool dDown = (GetAsyncKeyState('D') & 0x8000) || (GetAsyncKeyState('d') & 0x8000);
             bool sDown = (GetAsyncKeyState('S') & 0x8000) || (GetAsyncKeyState('s') & 0x8000);
+            bool wDown = (GetAsyncKeyState('W') & 0x8000) || (GetAsyncKeyState('w') & 0x8000);
+            if (wDown && !wDownLast) {
+                game.player1.setKeyState('w', true);
+            }
+            wDownLast = wDown;
             if (sDown && !sDownLast) {
                 game.player1.startDefend();
             }
