@@ -12,9 +12,15 @@ enum class CharacterAction {
     DEAD
 };
 
+enum class ControlType {
+    PLAYER1,
+    PLAYER2,
+    AI
+};
+
 class Character {
 public:
-    Character(float x = 0, float y = 0, const std::string& name = "Hero");
+    Character(float x = 0, float y = 0, const std::string& name = "Hero", ControlType controlType = ControlType::PLAYER1);
 
     void setPosition(float x, float y);
     float getX() const;
@@ -39,14 +45,27 @@ public:
     int getHP() const;
 
     void startDefend();
-    bool getIsDefending() const; // 提供给判定是否防御中
-
+    bool getIsDefending() const { return isDefending; }
     bool getIsJumping() const { return isJumping; }
     void startJump();
-
-    // 攻击相关
     void startAttack();
     bool getIsAttacking() const { return isAttacking; }
+
+    // 控制类型相关
+    void setControlType(ControlType type);
+    ControlType getControlType() const;
+
+    void resetInputState();
+
+    // 受击相关
+    void startHurt(int damage = 10);
+    bool getIsHurting() const { return isHurting; }
+
+    // 受击动画帧
+    int getHurtFrameIndex() const { return hurtFrameIndex; }
+    CharacterAction getCurrentAction() const { return currentAction_; }
+    int getAttackFrameIndex() const { return attackFrameIndex; }
+    bool isFacingRight() const { return facingRight_; }
 
 private:
     float x_, y_;
@@ -58,10 +77,11 @@ private:
     bool facingRight_;
     int animFrameCounter = 0;
 
-    bool leftPressed, rightPressed, jumpPressed, attackPressed;
+    bool leftPressed = false, rightPressed = false, jumpPressed = false, attackPressed = false;
 
     void putimage_alpha(int x, int y, IMAGE* img);
     void loadImages();
+
     //行走
     IMAGE walkImagesLeft[8];
     IMAGE walkImagesRight[8];
@@ -69,11 +89,11 @@ private:
     IMAGE idleImagesLeft[7];
     IMAGE idleImagesRight[7];
     //防御
-    bool isDefending = false;       // 是否处于防御动画期间
-    int defendFrameIndex = 0;       // 当前防御帧（0~5）
-    int defendAnimCounter = 0;      // 控制每两帧切换一次
-    IMAGE defendImagesLeft[6];          // 防御动画帧
-    IMAGE defendImagesRight[6];         // 防御动画帧
+    bool isDefending = false;
+    int defendFrameIndex = 0;
+    int defendAnimCounter = 0;
+    IMAGE defendImagesLeft[6];
+    IMAGE defendImagesRight[6];
     //跳跃
     bool isJumping = false;
     int jumpFrameIndex = 0;
@@ -83,7 +103,6 @@ private:
     const float gravity = 3.0f;
     IMAGE jumpImagesLeft[5];
     IMAGE jumpImagesRight[5];
-
     // 攻击
     bool isAttacking = false;
     int attackFrameIndex = 0;
@@ -91,4 +110,14 @@ private:
     const int attackTotalFrames = 5;
     IMAGE attackImagesLeft[5];
     IMAGE attackImagesRight[5];
+    // 受击
+    bool isHurting = false;
+    int hurtFrameIndex = 0;
+    int hurtAnimCounter = 0;
+    const int hurtTotalFrames = 4;
+    IMAGE hurtImagesLeft[4];
+    IMAGE hurtImagesRight[4];
+
+    // 控制类型
+    ControlType controlType_;
 };

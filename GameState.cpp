@@ -4,7 +4,7 @@
 
 GameState::GameState()
     : mode_(GameMode::NONE), timeLeft_(99), player1HP_(100), player2HP_(100),
-    player1(200, 250, "Player1"), player2(800, 250, "Player2"),
+    player1(200, 250, "Player1", ControlType::PLAYER1), player2(800, 250, "Player2", ControlType::PLAYER2),
     totalGameTime_(99), currentAnimation_num(0) {
     loadResources();
 }
@@ -31,6 +31,16 @@ void GameState::enter() {
     player2.setSpeed(0, 0);
     player1.setFacingRight(true);
     player2.setFacingRight(false);
+
+    player1.setControlType(ControlType::PLAYER1);
+    if (mode_ == GameMode::PVP)
+        player2.setControlType(ControlType::PLAYER2);
+    else
+        player2.setControlType(ControlType::AI);
+
+    player1.resetInputState();
+    player2.resetInputState();
+
     timer_.restart();
     currentAnimation_num = 0;
 }
@@ -41,8 +51,32 @@ void GameState::update(double deltaTime) {
         if (timeLeft_ < 0) timeLeft_ = 0;
     }
 
+    // 攻击判定：只在攻击动画的第2帧（假设攻击总5帧，这里是第2帧）
+    // 玩家1攻击玩家2
+    if (player1.getIsAttacking() && player1.getCurrentAction() == CharacterAction::ATTACK && player1.getAttackFrameIndex() == 2) {
+        int atkRange = 275 + 40;
+        float x1 = player1.getX();
+        float x2 = player2.getX();
+        bool inRange = false;
+        if (player1.isFacingRight() && x2 > x1 && x2 - x1 <= atkRange) inRange = true;
+        if (!player1.isFacingRight() && x1 > x2 && x1 - x2 <= atkRange) inRange = true;
+        if (inRange && !player2.getIsDefending() && !player2.getIsHurting()) {
+            player2.startHurt(10);
+        }
+    }
+    if (player2.getIsAttacking() && player2.getCurrentAction() == CharacterAction::ATTACK && player2.getAttackFrameIndex() == 2) {
+        int atkRange = 275 + 40;
+        float x1 = player2.getX();
+        float x2 = player1.getX();
+        bool inRange = false;
+        if (player2.isFacingRight() && x2 > x1 && x2 - x1 <= atkRange) inRange = true;
+        if (!player2.isFacingRight() && x1 > x2 && x1 - x2 <= atkRange) inRange = true;
+        if (inRange && !player1.getIsDefending() && !player1.getIsHurting()) {
+            player1.startHurt(10);
+        }
+    }
+
     if (mode_ == GameMode::PVP) {
-        // 控制已转移到主循环
     }
     else if (mode_ == GameMode::PVE || mode_ == GameMode::PRACTICE) {
         player2.aiControl();

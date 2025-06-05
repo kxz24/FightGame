@@ -4,29 +4,27 @@
 #include <iostream>
 #pragma comment(lib, "MSIMG32.LIB")
 
-Character::Character(float x, float y, const std::string& name)
+Character::Character(float x, float y, const std::string& name, ControlType controlType)
     : x_(x), y_(y), vx_(0), vy_(0), name_(name), hp_(100), frameCount_(0),
     currentAction_(CharacterAction::IDLE), facingRight_(true),
-    leftPressed(false), rightPressed(false), jumpPressed(false), attackPressed(false)
+    leftPressed(false), rightPressed(false), jumpPressed(false), attackPressed(false),
+    controlType_(controlType)
 {
     loadImages();
 }
 
-void Character::setPosition(float x, float y) {
-    x_ = x;
-    y_ = y;
+void Character::setControlType(ControlType type) { controlType_ = type; }
+ControlType Character::getControlType() const { return controlType_; }
+void Character::resetInputState() {
+    leftPressed = rightPressed = jumpPressed = attackPressed = false;
 }
+
+void Character::setPosition(float x, float y) { x_ = x; y_ = y; }
 float Character::getX() const { return x_; }
 float Character::getY() const { return y_; }
 
-void Character::setSpeed(float vx, float vy) {
-    vx_ = vx;
-    vy_ = vy;
-}
-void Character::addSpeed(float dx, float dy) {
-    vx_ += dx;
-    vy_ += dy;
-}
+void Character::setSpeed(float vx, float vy) { vx_ = vx; vy_ = vy; }
+void Character::addSpeed(float dx, float dy) { vx_ += dx; vy_ += dy; }
 float Character::getVX() const { return vx_; }
 float Character::getVY() const { return vy_; }
 
@@ -37,42 +35,29 @@ void Character::setAction(CharacterAction action) {
     }
 }
 
-// 处理游戏主循环外部的按键响应
 void Character::setKeyState(int key, bool pressed) {
-    if (key == 'a' || key == 'A') leftPressed = pressed;
-    if (key == 'd' || key == 'D') rightPressed = pressed;
-    if ((key == 'w' || key == 'W') && pressed) {
-        if (!isJumping && !isDefending && !isAttacking) {
-            startJump();
+    if (isHurting) return; // 受击期间不能任何操作
+    if (controlType_ == ControlType::PLAYER1) {
+        if (key == 'a' || key == 'A') leftPressed = pressed;
+        if (key == 'd' || key == 'D') rightPressed = pressed;
+        if ((key == 'w' || key == 'W') && pressed) {
+            if (!isJumping && !isDefending && !isAttacking) startJump();
+        }
+        if ((key == 'e' || key == 'E') && pressed) {
+            if (!isAttacking && !isJumping && !isDefending) startAttack();
         }
     }
-    if ((key == 'e' || key == 'E') && pressed) {
-        if (!isAttacking && !isJumping && !isDefending) {
-            startAttack();
-            return;
+    else if (controlType_ == ControlType::PLAYER2) {
+        if (key == 'h' || key == 'H') leftPressed = pressed;
+        if (key == 'k' || key == 'K') rightPressed = pressed;
+        if ((key == 'u' || key == 'U') && pressed) {
+            if (!isJumping && !isDefending && !isAttacking) startJump();
+        }
+        if ((key == 'i' || key == 'I') && pressed) {
+            if (!isAttacking && !isJumping && !isDefending) startAttack();
         }
     }
-
-    // 玩家2控制
-    if (key == 'h' || key == 'H') leftPressed = pressed;
-    if (key == 'k' || key == 'K') rightPressed = pressed;
-    if ((key == 'u' || key == 'U') && pressed) {
-        if (!isJumping && !isDefending && !isAttacking) {
-            startJump();
-        }
-    }
-    if ((key == 'i' || key == 'I') && pressed) {
-        if (!isAttacking && !isJumping && !isDefending) {
-            startAttack();
-            return;
-        }
-    }
-
-    // 玩家2防御由外部直接调用startDefend()，不重复写
-
-    // 如果正在跳跃/防御/攻击，禁止其他动作切换
     if (isJumping || isDefending || isAttacking) return;
-
     if (leftPressed && !rightPressed) {
         vx_ = -8;
         setFacingRight(false);
@@ -89,19 +74,25 @@ void Character::setKeyState(int key, bool pressed) {
     }
 }
 
-// AI控制逻辑，当前仅设置为静止状态
 void Character::aiControl() {
     setAction(CharacterAction::IDLE);
+    resetInputState();
 }
 
-//绘制角色
 void Character::render() {
     IMAGE* img = nullptr;
     int offsetX = 0;
-    int normalWidth = 225; // 普通图片宽度
-    int attackWidth = 275; // 攻击图片宽度
+    int normalWidth = 225;
+    int attackWidth = 275;
 
-    if (currentAction_ == CharacterAction::DEFEND && isDefending) {
+    if (currentAction_ == CharacterAction::HURT && isHurting) {
+        int frameIdx = hurtFrameIndex;
+        if (facingRight_)
+            img = &hurtImagesRight[frameIdx];
+        else
+            img = &hurtImagesLeft[frameIdx];
+    }
+    else if (currentAction_ == CharacterAction::DEFEND && isDefending) {
         int frameIdx = defendFrameIndex;
         if (facingRight_) {
             if (frameIdx >= 0 && frameIdx < 6)
@@ -122,7 +113,6 @@ void Character::render() {
             img = &attackImagesRight[frameIdx];
         else
             img = &attackImagesLeft[frameIdx];
-        // 居中对齐，攻击图片比其它宽
         offsetX = -(attackWidth - normalWidth) / 2;
     }
     else if (currentAction_ == CharacterAction::WALK) {
@@ -160,15 +150,9 @@ void Character::render() {
     outtextxy(static_cast<int>(x_) + 80, static_cast<int>(y_) - 30, name_.c_str());
 }
 
-// 设置角色朝向
-void Character::setFacingRight(bool right) {
-    facingRight_ = right;
-}
-
-// 获取角色名称
+void Character::setFacingRight(bool right) { facingRight_ = right; }
 std::string Character::getName() const { return name_; }
 
-// 更新角色状态
 void Character::update(float deltaTime) {
     animFrameCounter++;
     if (animFrameCounter >= 2) {
@@ -176,16 +160,29 @@ void Character::update(float deltaTime) {
         animFrameCounter = 0;
     }
 
+    // 受击动画
+    if (currentAction_ == CharacterAction::HURT && isHurting) {
+        hurtAnimCounter++;
+        if (hurtAnimCounter >= 3) {
+            hurtFrameIndex++;
+            hurtAnimCounter = 0;
+        }
+        if (hurtFrameIndex >= hurtTotalFrames) {
+            isHurting = false;
+            setAction(CharacterAction::IDLE);
+        }
+        return;
+    }
+
     // 攻击动画
     if (currentAction_ == CharacterAction::ATTACK && isAttacking) {
         attackAnimCounter++;
-        if (attackAnimCounter >= 2) { // 每2帧切换一帧
+        if (attackAnimCounter >= 2) {
             attackFrameIndex++;
             attackAnimCounter = 0;
         }
         if (attackFrameIndex >= attackTotalFrames) {
             isAttacking = false;
-            // 攻击动画结束，恢复动作
             if (leftPressed && !rightPressed) {
                 vx_ = -8;
                 setFacingRight(false);
@@ -201,10 +198,10 @@ void Character::update(float deltaTime) {
                 setAction(CharacterAction::IDLE);
             }
         }
-        return; // 攻击期间不做其他动作
+        return;
     }
 
-    // 计算防御帧数
+    // 防御动画
     if (currentAction_ == CharacterAction::DEFEND && isDefending) {
         defendAnimCounter++;
         if (defendAnimCounter >= 2) {
@@ -215,9 +212,10 @@ void Character::update(float deltaTime) {
             isDefending = false;
             setAction(CharacterAction::IDLE);
         }
+        return;
     }
 
-    // 处理跳跃逻辑
+    // 跳跃动画
     if (currentAction_ == CharacterAction::JUMP && isJumping) {
         jumpFrameIndex++;
         y_ += jumpVY;
@@ -228,7 +226,6 @@ void Character::update(float deltaTime) {
             x_ = 101;
         else if (x_ > 850)
             x_ = 849;
-        // 落地或帧数到达
         if (jumpFrameIndex >= jumpTotalFrames || y_ >= jumpStartY) {
             isJumping = false;
             if (leftPressed && !rightPressed) {
@@ -248,8 +245,8 @@ void Character::update(float deltaTime) {
         }
         return;
     }
-    // 更新角色位置
-    //这里实在不想写怎么限制角色的位置的逻辑了，于是乎用了最简单粗暴的办法，看起来效果不错
+
+    // 普通移动
     if (x_ >= 100 && x_ <= 850)
         x_ += vx_ * deltaTime * 60;
     else if (x_ < 100)
@@ -258,11 +255,12 @@ void Character::update(float deltaTime) {
         x_ = 849;
 }
 
-void Character::setHP(int hp) { hp_ = hp; }
+void Character::setHP(int hp) {
+    hp_ = hp;
+    if (hp_ < 0) hp_ = 0;
+}
 int Character::getHP() const { return hp_; }
 
-// 预加载角色的所有图像，防止程序运行时卡顿
-//没预处理绘制时直接加载程序会卡的像PPT，加载速度很慢
 void Character::loadImages() {
     for (int i = 0; i < 8; ++i) {
         std::string filename = "rec/walk_left/walk" + std::to_string(i + 1) + ".png";
@@ -304,10 +302,16 @@ void Character::loadImages() {
         std::string filename = "rec/attack_right/attack" + std::to_string(i + 1) + ".png";
         loadimage(&attackImagesRight[i], filename.c_str(), 275, 200, true);
     }
+    for (int i = 0; i < 4; ++i) {
+        std::string filename = "rec/hurt_left/hurt" + std::to_string(i + 1) + ".png";
+        loadimage(&hurtImagesLeft[i], filename.c_str(), 225, 200, true);
+    }
+    for (int i = 0; i < 4; ++i) {
+        std::string filename = "rec/hurt_right/hurt" + std::to_string(i + 1) + ".png";
+        loadimage(&hurtImagesRight[i], filename.c_str(), 225, 200, true);
+    }
 }
 
-//从b站up主Voidmatrix的教程中学习了putimage_alpha函数的实现
-// 该函数使用了图像的透明度信息，以保证图像的透明部分不会被覆盖为黑色
 void Character::putimage_alpha(int x, int y, IMAGE* img) {
     int h = img->getheight();
     int w = img->getwidth();
@@ -315,33 +319,41 @@ void Character::putimage_alpha(int x, int y, IMAGE* img) {
         GetImageHDC(img), 0, 0, w, h, { AC_SRC_OVER,0,255,AC_SRC_ALPHA });
 }
 
-//防御
 void Character::startDefend() {
-    if (!isDefending && !isAttacking) {
-        setAction(CharacterAction::DEFEND);
-        isDefending = true;
-        defendFrameIndex = 0;
-        defendAnimCounter = 0;
-        vx_ = 0; // 防御时不移动
-    }
+    // 跳跃中不能进入防御
+    if (isJumping) return;
+    if (isDefending || isAttacking || isHurting) return;
+    setAction(CharacterAction::DEFEND);
+    isDefending = true;
+    defendFrameIndex = 0;
+    defendAnimCounter = 0;
+    vx_ = 0;
 }
 
-//攻击
 void Character::startAttack() {
-    if (isAttacking) return;
+    if (isAttacking || isHurting) return;
     isAttacking = true;
     setAction(CharacterAction::ATTACK);
     attackFrameIndex = 0;
     attackAnimCounter = 0;
-    vx_ = 0; // 攻击时不移动
+    vx_ = 0;
 }
 
-//跳跃
 void Character::startJump() {
-    if (isJumping || isAttacking) return;
+    if (isJumping || isAttacking || isHurting) return;
     isJumping = true;
     setAction(CharacterAction::JUMP);
     jumpFrameIndex = 0;
     jumpStartY = y_;
     jumpVY = -7 * gravity;
+}
+
+void Character::startHurt(int damage) {
+    if (isHurting) return;
+    isHurting = true;
+    hurtFrameIndex = 0;
+    hurtAnimCounter = 0;
+    setAction(CharacterAction::HURT);
+    setSpeed(0, 0);
+    setHP(getHP() - damage);
 }

@@ -20,18 +20,6 @@ int main() {
 
     auto prevTime = std::chrono::steady_clock::now();
 
-    bool aDownLast = false;
-    bool dDownLast = false;
-    bool sDownLast = false;
-    bool wDownLast = false;
-    bool eDownLast = false;
-
-    bool hDownLast = false; // 玩家2左
-    bool kDownLast = false; // 玩家2右
-    bool jDownLast = false; // 玩家2防御
-    bool uDownLast = false; // 玩家2跳跃
-    bool iDownLast = false; // 玩家2攻击
-
     while (true) {
         auto frameStart = std::chrono::steady_clock::now();
         double deltaTime = std::chrono::duration<double>(frameStart - prevTime).count();
@@ -62,45 +50,21 @@ int main() {
             bool uDown = (GetAsyncKeyState('U') & 0x8000) || (GetAsyncKeyState('u') & 0x8000);
             bool iDown = (GetAsyncKeyState('I') & 0x8000) || (GetAsyncKeyState('i') & 0x8000);
 
-            // 玩家1
-            if (wDown && !wDownLast)
-                game.player1.setKeyState('w', true);
-            wDownLast = wDown;
+            // 玩家1输入每帧都set，保证松开时能恢复
+            game.player1.setKeyState('a', aDown);
+            game.player1.setKeyState('d', dDown);
+            if (wDown) game.player1.setKeyState('w', true);
+            if (eDown) game.player1.setKeyState('e', true);
+            if (sDown) game.player1.startDefend();
 
-            if (sDown && !sDownLast)
-                game.player1.startDefend();
-            sDownLast = sDown;
-
-            if (aDown != aDownLast)
-                game.player1.setKeyState('a', aDown);
-            if (dDown != dDownLast)
-                game.player1.setKeyState('d', dDown);
-            if (eDown && !eDownLast)
-                game.player1.setKeyState('e', true);
-
-            aDownLast = aDown;
-            dDownLast = dDown;
-            eDownLast = eDown;
-
-            // 玩家2（和上面一样）
-            if (uDown && !uDownLast)
-                game.player2.setKeyState('u', true); // 跳跃
-            uDownLast = uDown;
-
-            if (jDown && !jDownLast)
-                game.player2.startDefend(); // 防御
-            jDownLast = jDown;
-
-            if (hDown != hDownLast)
-                game.player2.setKeyState('h', hDown); // 左
-            if (kDown != kDownLast)
-                game.player2.setKeyState('k', kDown); // 右
-            if (iDown && !iDownLast)
-                game.player2.setKeyState('i', true); // 攻击
-
-            hDownLast = hDown;
-            kDownLast = kDown;
-            iDownLast = iDown;
+            // 玩家2输入只在PVP模式下响应
+            if (game.getMode() == GameMode::PVP) {
+                game.player2.setKeyState('h', hDown);
+                game.player2.setKeyState('k', kDown);
+                if (uDown) game.player2.setKeyState('u', true);
+                if (iDown) game.player2.setKeyState('i', true);
+                if (jDown) game.player2.startDefend();
+            }
 
             game.update(deltaTime);
             game.render();

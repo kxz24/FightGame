@@ -19,7 +19,7 @@ public:
     void render();
     double getTimeLeft() const;
 
-    // 公开成员便于主循环访问
+    // 角色对象，供主循环调用
     Character player1;
     Character player2;
 
