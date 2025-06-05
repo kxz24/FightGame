@@ -42,13 +42,36 @@ void Character::setKeyState(int key, bool pressed) {
     if (key == 'a' || key == 'A') leftPressed = pressed;
     if (key == 'd' || key == 'D') rightPressed = pressed;
     if ((key == 'w' || key == 'W') && pressed) {
-        if (!isJumping && !isDefending) {
+        if (!isJumping && !isDefending && !isAttacking) {
             startJump();
         }
     }
+    if ((key == 'e' || key == 'E') && pressed) {
+        if (!isAttacking && !isJumping && !isDefending) {
+            startAttack();
+            return;
+        }
+    }
 
-    // 如果正在跳跃或防御，禁止其他动作切换
-    if (isJumping || isDefending) return;
+    // 玩家2控制
+    if (key == 'h' || key == 'H') leftPressed = pressed;
+    if (key == 'k' || key == 'K') rightPressed = pressed;
+    if ((key == 'u' || key == 'U') && pressed) {
+        if (!isJumping && !isDefending && !isAttacking) {
+            startJump();
+        }
+    }
+    if ((key == 'i' || key == 'I') && pressed) {
+        if (!isAttacking && !isJumping && !isDefending) {
+            startAttack();
+            return;
+        }
+    }
+
+    // 玩家2防御由外部直接调用startDefend()，不重复写
+
+    // 如果正在跳跃/防御/攻击，禁止其他动作切换
+    if (isJumping || isDefending || isAttacking) return;
 
     if (leftPressed && !rightPressed) {
         vx_ = -8;
@@ -65,6 +88,7 @@ void Character::setKeyState(int key, bool pressed) {
         setAction(CharacterAction::IDLE);
     }
 }
+
 // AI控制逻辑，当前仅设置为静止状态
 void Character::aiControl() {
     setAction(CharacterAction::IDLE);
@@ -73,13 +97,34 @@ void Character::aiControl() {
 //绘制角色
 void Character::render() {
     IMAGE* img = nullptr;
+    int offsetX = 0;
+    int normalWidth = 225; // 普通图片宽度
+    int attackWidth = 275; // 攻击图片宽度
+
     if (currentAction_ == CharacterAction::DEFEND && isDefending) {
         int frameIdx = defendFrameIndex;
-        if (frameIdx >= 0 && frameIdx < 6)
-            img = &defendImagesLeft[frameIdx];
+        if (facingRight_) {
+            if (frameIdx >= 0 && frameIdx < 6)
+                img = &defendImagesRight[frameIdx];
+            else
+                img = &idleImagesRight[0];
+        }
+        else {
+            if (frameIdx >= 0 && frameIdx < 6)
+                img = &defendImagesLeft[frameIdx];
+            else
+                img = &idleImagesLeft[0];
+        }
+    }
+    else if (currentAction_ == CharacterAction::ATTACK && isAttacking) {
+        int frameIdx = attackFrameIndex;
+        if (facingRight_)
+            img = &attackImagesRight[frameIdx];
         else
-            img = &idleImagesLeft[0];
-    } 
+            img = &attackImagesLeft[frameIdx];
+        // 居中对齐，攻击图片比其它宽
+        offsetX = -(attackWidth - normalWidth) / 2;
+    }
     else if (currentAction_ == CharacterAction::WALK) {
         int frameIdx = frameCount_ % 8;
         if (facingRight_)
@@ -106,10 +151,13 @@ void Character::render() {
         else
             img = &jumpImagesLeft[imgIdx];
     }
-    putimage_alpha(static_cast<int>(x_), static_cast<int>(y_), img);
+
+    if (img)
+        putimage_alpha(static_cast<int>(x_) + offsetX, static_cast<int>(y_), img);
+
     settextcolor(WHITE);
     settextstyle(18, 0, "Arial");
-    outtextxy(static_cast<int>(x_)+80, static_cast<int>(y_) - 30, name_.c_str());
+    outtextxy(static_cast<int>(x_) + 80, static_cast<int>(y_) - 30, name_.c_str());
 }
 
 // 设置角色朝向
@@ -127,19 +175,48 @@ void Character::update(float deltaTime) {
         frameCount_++;
         animFrameCounter = 0;
     }
+
+    // 攻击动画
+    if (currentAction_ == CharacterAction::ATTACK && isAttacking) {
+        attackAnimCounter++;
+        if (attackAnimCounter >= 2) { // 每2帧切换一帧
+            attackFrameIndex++;
+            attackAnimCounter = 0;
+        }
+        if (attackFrameIndex >= attackTotalFrames) {
+            isAttacking = false;
+            // 攻击动画结束，恢复动作
+            if (leftPressed && !rightPressed) {
+                vx_ = -8;
+                setFacingRight(false);
+                setAction(CharacterAction::WALK);
+            }
+            else if (!leftPressed && rightPressed) {
+                vx_ = 8;
+                setFacingRight(true);
+                setAction(CharacterAction::WALK);
+            }
+            else {
+                vx_ = 0;
+                setAction(CharacterAction::IDLE);
+            }
+        }
+        return; // 攻击期间不做其他动作
+    }
+
     // 计算防御帧数
     if (currentAction_ == CharacterAction::DEFEND && isDefending) {
         defendAnimCounter++;
-        if (defendAnimCounter >= 2) { // 每2帧切换一次
+        if (defendAnimCounter >= 2) {
             defendFrameIndex++;
             defendAnimCounter = 0;
         }
         if (defendFrameIndex >= 6) {
-            // 防御动画播完，退出防御状态
             isDefending = false;
             setAction(CharacterAction::IDLE);
         }
     }
+
     // 处理跳跃逻辑
     if (currentAction_ == CharacterAction::JUMP && isJumping) {
         jumpFrameIndex++;
@@ -190,7 +267,7 @@ void Character::loadImages() {
     for (int i = 0; i < 8; ++i) {
         std::string filename = "rec/walk_left/walk" + std::to_string(i + 1) + ".png";
         loadimage(&walkImagesLeft[i], filename.c_str(), 225, 200, true);
-    } 
+    }
     for (int i = 0; i < 8; ++i) {
         std::string filename = "rec/walk_right/walk" + std::to_string(i + 1) + ".png";
         loadimage(&walkImagesRight[i], filename.c_str(), 225, 200, true);
@@ -204,11 +281,11 @@ void Character::loadImages() {
         loadimage(&idleImagesRight[i], filename.c_str(), 225, 200, true);
     }
     for (int i = 0; i < 6; ++i) {
-        std::string filename = "rec/defend/defend" + std::to_string(i + 1) + ".png";
+        std::string filename = "rec/defend_left/defend" + std::to_string(i + 1) + ".png";
         loadimage(&defendImagesLeft[i], filename.c_str(), 225, 200, true);
     }
     for (int i = 0; i < 6; ++i) {
-        std::string filename = "rec/defend/defend" + std::to_string(i + 1) + ".png";
+        std::string filename = "rec/defend_right/defend" + std::to_string(i + 1) + ".png";
         loadimage(&defendImagesRight[i], filename.c_str(), 225, 200, true);
     }
     for (int i = 0; i < 5; ++i) {
@@ -218,6 +295,14 @@ void Character::loadImages() {
     for (int i = 0; i < 5; ++i) {
         std::string filename = "rec/jump_right/jump" + std::to_string(i + 1) + ".png";
         loadimage(&jumpImagesRight[i], filename.c_str(), 225, 200, true);
+    }
+    for (int i = 0; i < 5; ++i) {
+        std::string filename = "rec/attack_left/attack" + std::to_string(i + 1) + ".png";
+        loadimage(&attackImagesLeft[i], filename.c_str(), 275, 200, true);
+    }
+    for (int i = 0; i < 5; ++i) {
+        std::string filename = "rec/attack_right/attack" + std::to_string(i + 1) + ".png";
+        loadimage(&attackImagesRight[i], filename.c_str(), 275, 200, true);
     }
 }
 
@@ -232,7 +317,7 @@ void Character::putimage_alpha(int x, int y, IMAGE* img) {
 
 //防御
 void Character::startDefend() {
-    if (!isDefending) {
+    if (!isDefending && !isAttacking) {
         setAction(CharacterAction::DEFEND);
         isDefending = true;
         defendFrameIndex = 0;
@@ -240,14 +325,23 @@ void Character::startDefend() {
         vx_ = 0; // 防御时不移动
     }
 }
+
+//攻击
+void Character::startAttack() {
+    if (isAttacking) return;
+    isAttacking = true;
+    setAction(CharacterAction::ATTACK);
+    attackFrameIndex = 0;
+    attackAnimCounter = 0;
+    vx_ = 0; // 攻击时不移动
+}
+
 //跳跃
-
-
 void Character::startJump() {
-    if (isJumping) return;
+    if (isJumping || isAttacking) return;
     isJumping = true;
     setAction(CharacterAction::JUMP);
     jumpFrameIndex = 0;
     jumpStartY = y_;
-    jumpVY = -7 * gravity; 
+    jumpVY = -7 * gravity;
 }
