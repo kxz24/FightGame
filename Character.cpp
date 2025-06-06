@@ -36,7 +36,7 @@ void Character::setAction(CharacterAction action) {
 }
 
 void Character::setKeyState(int key, bool pressed) {
-    if (isHurting) return; // 受击期间不能任何操作
+    if (isHurting || isDead) return; // 死亡或受击期间不能任何操作
     if (controlType_ == ControlType::PLAYER1) {
         if (key == 'a' || key == 'A') leftPressed = pressed;
         if (key == 'd' || key == 'D') rightPressed = pressed;
@@ -140,6 +140,14 @@ void Character::render() {
             img = &jumpImagesRight[imgIdx];
         else
             img = &jumpImagesLeft[imgIdx];
+    }
+    else if (currentAction_ == CharacterAction::DEAD && isDead) {
+        int frameIdx = deadFrameIndex;
+        if (frameIdx >= deadTotalFrames) frameIdx = deadTotalFrames - 1;
+        if (facingRight_)
+            img = &deadImagesRight[frameIdx];
+        else
+            img = &deadImagesLeft[frameIdx];
     }
 
     if (img)
@@ -245,7 +253,17 @@ void Character::update(float deltaTime) {
         }
         return;
     }
-
+    if (currentAction_ == CharacterAction::DEAD && isDead) {
+        deadAnimCounter++;
+        if (deadAnimCounter >= 3) {
+            deadFrameIndex++;
+            deadAnimCounter = 0;
+        }
+        if (deadFrameIndex >= deadTotalFrames) {
+            deadFrameIndex = deadTotalFrames - 1; // 停在最后一帧
+        }
+        return;
+    }
     // 普通移动
     if (x_ >= 100 && x_ <= 850)
         x_ += vx_ * deltaTime * 60;
@@ -257,9 +275,12 @@ void Character::update(float deltaTime) {
 
 void Character::setHP(int hp) {
     hp_ = hp;
-    if (hp_ < 0) hp_ = 0;
+    if (hp_ <= 0 && !isDead) {
+        startDead();
+    }
 }
 int Character::getHP() const { return hp_; }
+
 
 void Character::loadImages() {
     for (int i = 0; i < 8; ++i) {
@@ -310,6 +331,14 @@ void Character::loadImages() {
         std::string filename = "rec/hurt_right/hurt" + std::to_string(i + 1) + ".png";
         loadimage(&hurtImagesRight[i], filename.c_str(), 225, 200, true);
     }
+    for (int i = 0; i < 12; ++i) {
+        std::string filename = "rec/death_left/death" + std::to_string(i + 1) + ".png";
+        loadimage(&deadImagesLeft[i], filename.c_str(), 225, 200, true);
+    }
+    for (int i = 0; i < 12; ++i) {
+        std::string filename = "rec/death_right/death" + std::to_string(i + 1) + ".png";
+        loadimage(&deadImagesRight[i], filename.c_str(), 225, 200, true);
+    }
 }
 
 void Character::putimage_alpha(int x, int y, IMAGE* img) {
@@ -356,4 +385,13 @@ void Character::startHurt(int damage) {
     setAction(CharacterAction::HURT);
     setSpeed(0, 0);
     setHP(getHP() - damage);
+}
+
+void Character::startDead() {
+    if (isDead) return;
+    isDead = true;
+    deadFrameIndex = 0;
+    deadAnimCounter = 0;
+    setAction(CharacterAction::DEAD);
+    setSpeed(0, 0);
 }

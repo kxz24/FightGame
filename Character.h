@@ -57,11 +57,12 @@ public:
 
     void resetInputState();
 
-    // 受击相关
+    // 受击、死亡相关
     void startHurt(int damage = 10);
     bool getIsHurting() const { return isHurting; }
+    void startDead();
+    bool getIsDead() const { return isDead; }
 
-    // 受击动画帧
     int getHurtFrameIndex() const { return hurtFrameIndex; }
     CharacterAction getCurrentAction() const { return currentAction_; }
     int getAttackFrameIndex() const { return attackFrameIndex; }
@@ -117,6 +118,13 @@ private:
     const int hurtTotalFrames = 4;
     IMAGE hurtImagesLeft[4];
     IMAGE hurtImagesRight[4];
+    // 死亡
+    bool isDead = false;
+    int deadFrameIndex = 0;
+    int deadAnimCounter = 0;
+    const int deadTotalFrames = 12;
+    IMAGE deadImagesLeft[12];
+    IMAGE deadImagesRight[12];
 
     // 控制类型
     ControlType controlType_;
