@@ -74,9 +74,57 @@ void Character::setKeyState(int key, bool pressed) {
     }
 }
 
-void Character::aiControl() {
-    setAction(CharacterAction::IDLE);
-    resetInputState();
+void Character::aiControl(const Character& target) {
+    float px = target.getX();
+    float ai_x = getX();
+    float distance = px - ai_x;
+
+    // Ëæ»úÒò×Ó
+    int r = rand() % 100;
+
+    // ËÀÍöÖ±½Ó²»²Ù×÷
+    if (isDead) {
+        setAction(CharacterAction::DEAD);
+        return;
+    }
+
+    // Óöµ½ÌØÊâ¶¯»­£¬ÓÅÏÈ´¦Àí
+    if (isHurting || isAttacking || isDefending || isJumping) {
+        return;
+    }
+
+    // AI¿ØÖÆÂß¼­
+    if (abs(distance) > 120) {
+        // ÏòÍæ¼Ò¿¿½ü
+        if (distance > 0) {
+            setFacingRight(true);
+            vx_ = 4;
+            setAction(CharacterAction::WALK);
+        }
+        else {
+            setFacingRight(false);
+            vx_ = -4;
+            setAction(CharacterAction::WALK);
+        }
+    }
+    else if (abs(distance) <= 120) {
+        // ¾àÀëºÏÊÊ£¬³¢ÊÔ¹¥»÷/ÌøÔ¾/·ÀÓù
+        vx_ = 0;
+        setAction(CharacterAction::IDLE);
+        if (r < 28) { // 28% ¹¥»÷
+            startAttack();
+        }
+        else if (r < 34) { // 6% ÌøÔ¾
+            startJump();
+        }
+        else if (r < 40) { // 6% ·ÀÓù
+            startDefend();
+        }
+    }
+    else {
+        vx_ = 0;
+        setAction(CharacterAction::IDLE);
+    }
 }
 
 void Character::render() {
@@ -177,6 +225,8 @@ void Character::update(float deltaTime) {
         }
         if (hurtFrameIndex >= hurtTotalFrames) {
             isHurting = false;
+            isJumping = false;
+            y_ = 250;
             setAction(CharacterAction::IDLE);
         }
         return;
@@ -394,4 +444,21 @@ void Character::startDead() {
     deadAnimCounter = 0;
     setAction(CharacterAction::DEAD);
     setSpeed(0, 0);
+}
+void Character::resetState() {
+    isDead = false;
+    isHurting = false;
+    isAttacking = false;
+    isDefending = false;
+    isJumping = false;
+    currentAction_ = CharacterAction::IDLE;
+    frameCount_ = 0;
+    animFrameCounter = 0;
+    defendFrameIndex = defendAnimCounter = 0;
+    jumpFrameIndex = 0; jumpStartY = 0; jumpVY = 0;
+    attackFrameIndex = attackAnimCounter = 0;
+    hurtFrameIndex = hurtAnimCounter = 0;
+    deadFrameIndex = deadAnimCounter = 0;
+    vx_ = vy_ = 0;
+    leftPressed = rightPressed = jumpPressed = attackPressed = false;
 }

@@ -35,7 +35,7 @@ public:
 
     void setKeyState(int key, bool pressed);
 
-    void aiControl();
+    void aiControl(const Character& target);
     void render();
     void setFacingRight(bool right);
     std::string getName() const;
@@ -51,13 +51,13 @@ public:
     void startAttack();
     bool getIsAttacking() const { return isAttacking; }
 
-    // 控制类型相关
+    // 控制类型设置和获取
     void setControlType(ControlType type);
     ControlType getControlType() const;
 
     void resetInputState();
 
-    // 受击、死亡相关
+    // 状态相关
     void startHurt(int damage = 10);
     bool getIsHurting() const { return isHurting; }
     void startDead();
@@ -67,6 +67,8 @@ public:
     CharacterAction getCurrentAction() const { return currentAction_; }
     int getAttackFrameIndex() const { return attackFrameIndex; }
     bool isFacingRight() const { return facingRight_; }
+
+    void resetState(); // 新增：重置所有临时状态
 
 private:
     float x_, y_;
@@ -83,19 +85,19 @@ private:
     void putimage_alpha(int x, int y, IMAGE* img);
     void loadImages();
 
-    //行走
+    // 行走
     IMAGE walkImagesLeft[8];
     IMAGE walkImagesRight[8];
-    //站立
+    // 站立
     IMAGE idleImagesLeft[7];
     IMAGE idleImagesRight[7];
-    //防御
+    // 防御
     bool isDefending = false;
     int defendFrameIndex = 0;
     int defendAnimCounter = 0;
     IMAGE defendImagesLeft[6];
     IMAGE defendImagesRight[6];
-    //跳跃
+    // 跳跃
     bool isJumping = false;
     int jumpFrameIndex = 0;
     const int jumpTotalFrames = 15;
@@ -111,7 +113,7 @@ private:
     const int attackTotalFrames = 5;
     IMAGE attackImagesLeft[5];
     IMAGE attackImagesRight[5];
-    // 受击
+    // 受伤
     bool isHurting = false;
     int hurtFrameIndex = 0;
     int hurtAnimCounter = 0;

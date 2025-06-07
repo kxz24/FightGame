@@ -29,6 +29,10 @@ void GameState::enter() {
     player2.setPosition(800, 250);
     player1.setSpeed(0, 0);
     player2.setSpeed(0, 0);
+   
+    player1.resetState();
+    player2.resetState();
+
     player1.setFacingRight(true);
     player2.setFacingRight(false);
 
@@ -79,7 +83,7 @@ void GameState::update(double deltaTime) {
     if (mode_ == GameMode::PVP) {
     }
     else if (mode_ == GameMode::PVE || mode_ == GameMode::PRACTICE) {
-        player2.aiControl();
+        player2.aiControl(player1);
     }
 
     player1.update((float)deltaTime);
