@@ -128,8 +128,10 @@ void GameState::render() {
     player2.render();
 
     setfillcolor(RED);
-    fillrectangle(50, 50, 50 + player1.getHP() * 3, 80);
-    fillrectangle(800, 50, 800 + player2.getHP() * 3, 80);
+    int barWidth = 300; 
+    int maxHP = configLife_;
+    fillrectangle(50, 50, 50 + player1.getHP() * barWidth / maxHP, 80);
+    fillrectangle(800, 50, 800 + player2.getHP() * barWidth / maxHP, 80);
 
     settextcolor(WHITE);
     settextstyle(30, 0, "Arial Black");

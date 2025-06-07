@@ -141,7 +141,7 @@ void Menu::drawSettingsBattleMenu() {
         selectedTimeIndex == 1 ? _T(">>60秒<<") : _T(" 60秒 "),
         selectedTimeIndex == 2 ? _T(">>90秒<<") : _T(" 90秒 ")
     );
-    outtextxy(360, 170, buf);
+    outtextxy(360, 180, buf);
 
     settextcolor(selectedOption == 1 ? highColor : WHITE);
     _stprintf_s(buf, _T("人物生命：  %s  %s  %s"),
@@ -149,11 +149,11 @@ void Menu::drawSettingsBattleMenu() {
         selectedLifeIndex == 1 ? _T(">>200<<") : _T(" 200 "),
         selectedLifeIndex == 2 ? _T(">>300<<") : _T(" 300 ")
     );
-    outtextxy(360, 220, buf);
+    outtextxy(360, 230, buf);
 
     settextcolor(selectedOption == 2 ? highColor : WHITE);
     settextstyle(45, 20, _T("Arial Black"));
-    outtextxy(450, 270, selectedOption == 2 ? _T(">> 返回 <<") : _T("     返回"));
+    outtextxy(450, 280, selectedOption == 2 ? _T(">> 返回 <<") : _T("     返回"));
 }
 void Menu::handleMouse() {
     if (state == MENU_MAIN) {
@@ -245,7 +245,7 @@ void Menu::handleMouse() {
     }
     else if (state == MENU_SETTINGS_BATTLE) {
         int opt_x1 = 400, opt_x2 = 900;
-        int opt_y[3][2] = { { 170,210 }, { 220,260 }, { 270,310 } };
+        int opt_y[3][2] = { { 180,220 }, { 230,270 }, { 280,320 } };
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;

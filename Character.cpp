@@ -310,7 +310,7 @@ void Character::update(float deltaTime) {
             deadAnimCounter = 0;
         }
         if (deadFrameIndex >= deadTotalFrames) {
-            deadFrameIndex = deadTotalFrames - 1; // 停在最后一帧
+            deadFrameIndex = deadTotalFrames - 1; 
         }
         return;
     }
@@ -428,7 +428,6 @@ void Character::startJump() {
 }
 
 void Character::startHurt(int damage) {
-    if (isHurting) return;
     isHurting = true;
     hurtFrameIndex = 0;
     hurtAnimCounter = 0;
@@ -444,7 +443,9 @@ void Character::startDead() {
     deadAnimCounter = 0;
     setAction(CharacterAction::DEAD);
     setSpeed(0, 0);
+    isHurting = false; 
 }
+
 void Character::resetState() {
     isDead = false;
     isHurting = false;
