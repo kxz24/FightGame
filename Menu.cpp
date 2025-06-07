@@ -1,39 +1,35 @@
-#include "Menu.h"
-#include"GameState.h"
-#include <graphics.h> // EasyXÍ·ÎÄ¼ş
+ï»¿#include "Menu.h"
+#include "GameState.h"
+#include <graphics.h>
 #include <conio.h>
-#include <cmath> 
+#include <cmath>
 
-Menu::Menu() : state(MENU_MAIN), selectedOption(0), frame(0) {}
+Menu::Menu() : state(MENU_MAIN), selectedOption(0), frame(0), selectedTimeIndex(1), selectedLifeIndex(0) {}
 
 void Menu::Draw() {
     switch (state) {
     case MENU_MAIN: drawMainMenu(frame); break;
     case MENU_START: drawStartMenu(); break;
     case MENU_SETTINGS: drawSettingsMenu(); break;
-        // ÆäËû²Ëµ¥
+    case MENU_SETTINGS_BATTLE: drawSettingsBattleMenu(); break;
     }
     frame++;
 }
 
 void Menu::Update() {
-    // --- Êó±ê´¦Àí ---
     handleMouse();
 
-    // --- ¼üÅÌ´¦Àí ----
     if (_kbhit()) {
         char ch = _getch();
         if (state == MENU_MAIN) {
-            //´¦ÀíÖ÷²Ëµ¥µÄÑ¡Ôñ
             if (ch == 'w' && selectedOption > 0)
                 selectedOption--;
-            if (ch == 's' && selectedOption < 2) 
+            if (ch == 's' && selectedOption < 2)
                 selectedOption++;
             if (ch == '\r')
                 handleMainMenuSelect();
         }
         else if (state == MENU_START) {
-            // ´¦ÀíÈıÖÖÄ£Ê½µÄÑ¡Ôñ
             if (ch == 'w' && selectedOption > 0)
                 selectedOption--;
             if (ch == 's' && selectedOption < 3)
@@ -42,13 +38,15 @@ void Menu::Update() {
                 handleStartGameSelect();
         }
         else if (state == MENU_SETTINGS) {
-            // ´¦ÀíÉèÖÃ²Ëµ¥µÄÑ¡Ôñ
-            if (ch == 'w' && selectedOption > 0) 
+            if (ch == 'w' && selectedOption > 0)
                 selectedOption--;
-            if (ch == 's' && selectedOption < 2) 
+            if (ch == 's' && selectedOption < 2)
                 selectedOption++;
-            if (ch == '\r') 
+            if (ch == '\r')
                 handleSettingsSelect();
+        }
+        else if (state == MENU_SETTINGS_BATTLE) {
+            handleSettingsBattle();
         }
     }
 }
@@ -60,17 +58,14 @@ MenuState Menu::GetState() const {
 void Menu::drawMainMenu(int frame) {
     cleardevice();
 
-    // ¼ÓÔØ±³¾°Í¼Æ¬
     IMAGE background;
-    loadimage(&background, _T("rec/bg/Background1.png"), 1200, 600, 1); 
+    loadimage(&background, _T("rec/bg/Background1.png"), 1200, 600, 1);
     putimage(0, 0, &background);
-    
-    // ±êÌâÅäÉ«
-    COLORREF color1 = RGB(0, 255, 255); 
-    COLORREF color2 = RGB(255, 0, 255);   
-    COLORREF color3 = RGB(155, 255, 0); 
 
-    //¶¯Ì¬ÉèÖÃÆ«ÒÆÁ¿
+    COLORREF color1 = RGB(0, 255, 255);
+    COLORREF color2 = RGB(255, 0, 255);
+    COLORREF color3 = RGB(155, 255, 0);
+
     int x = 150, y = 100;
     int dx1 = int(3 * sin(frame * 0.13));
     int dy1 = int(2 * cos(frame * 0.11));
@@ -79,43 +74,38 @@ void Menu::drawMainMenu(int frame) {
     int dx3 = int(2 * sin(frame * 0.18 + 2.8));
     int dy3 = int(4 * cos(frame * 0.09 + 0.8));
 
-    // µ×²ã±êÌâ
     setbkmode(TRANSPARENT);
     settextstyle(80, 54, _T("Arial Black"));
     settextcolor(color1);
     outtextxy(x + dx1, y + dy1, _T("Armored Warriors"));
 
-    // ÖĞ¼ä²ã±êÌâ
     settextstyle(76, 52, _T("Arial Black"));
     settextcolor(color2);
     outtextxy(x + dx2, y + dy2, _T("Armored Warriors"));
 
-    // ¶¥²ã±êÌâ
     settextstyle(72, 50, _T("Arial Black"));
     settextcolor(color3);
     outtextxy(x + dx3, y + dy3, _T("Armored Warriors"));
 
-    // Ñ¡Ïî
     settextcolor(BLACK);
     settextstyle(45, 20, _T("Arial Black"));
-    outtextxy(450, 300, selectedOption == 0 ? _T(">> ¿ªÊ¼ÓÎÏ· <<") : _T("     ¿ªÊ¼ÓÎÏ·"));
-    outtextxy(450, 350, selectedOption == 1 ? _T(">> ÓÎÏ·ÉèÖÃ <<") : _T("     ÓÎÏ·ÉèÖÃ"));
-    outtextxy(450, 400, selectedOption == 2 ? _T(">> ÍË³öÓÎÏ· <<") : _T("     ÍË³öÓÎÏ·"));
+    outtextxy(450, 300, selectedOption == 0 ? _T(">> å¼€å§‹æ¸¸æˆ <<") : _T("     å¼€å§‹æ¸¸æˆ"));
+    outtextxy(450, 350, selectedOption == 1 ? _T(">> æ¸¸æˆè®¾ç½® <<") : _T("     æ¸¸æˆè®¾ç½®"));
+    outtextxy(450, 400, selectedOption == 2 ? _T(">> é€€å‡ºæ¸¸æˆ <<") : _T("     é€€å‡ºæ¸¸æˆ"));
 }
 
 void Menu::drawStartMenu() {
     cleardevice();
-    // ¼ÓÔØ±³¾°Í¼Æ¬
     IMAGE background;
     loadimage(&background, _T("rec/bg/background2.png"), 1200, 600, 1);
     putimage(0, 0, &background);
     settextcolor(WHITE);
     settextstyle(45, 20, _T("Arial Black"));
-    outtextxy(450, 200, _T("ÇëÑ¡ÔñÓÎÏ·Ä£Ê½"));
-    outtextxy(450, 250, selectedOption == 0 ? _T(">> Ë«ÈË¶ÔÕ½ <<") : _T("     Ë«ÈË¶ÔÕ½"));
-    outtextxy(450, 300, selectedOption == 1 ? _T(">> ÈË»ú¶ÔÕ½ <<") : _T("     ÈË»ú¶ÔÕ½"));
-    outtextxy(450, 350, selectedOption == 2 ? _T(">> Á·Ï°Ä£Ê½ <<") : _T("     Á·Ï°Ä£Ê½"));
-    outtextxy(450, 400, selectedOption == 3 ? _T(">> ·µ»ØÖ÷²Ëµ¥ <<") : _T("     ·µ»ØÖ÷²Ëµ¥"));
+    outtextxy(450, 200, _T("è¯·é€‰æ‹©æ¸¸æˆæ¨¡å¼"));
+    outtextxy(450, 250, selectedOption == 0 ? _T(">> åŒäººå¯¹æˆ˜ <<") : _T("     åŒäººå¯¹æˆ˜"));
+    outtextxy(450, 300, selectedOption == 1 ? _T(">> äººæœºå¯¹æˆ˜ <<") : _T("     äººæœºå¯¹æˆ˜"));
+    outtextxy(450, 350, selectedOption == 2 ? _T(">> ç»ƒä¹ æ¨¡å¼ <<") : _T("     ç»ƒä¹ æ¨¡å¼"));
+    outtextxy(450, 400, selectedOption == 3 ? _T(">> è¿”å›ä¸»èœå• <<") : _T("     è¿”å›ä¸»èœå•"));
 }
 
 void Menu::drawSettingsMenu() {
@@ -125,25 +115,58 @@ void Menu::drawSettingsMenu() {
     putimage(0, 0, &background);
     settextcolor(WHITE);
     settextstyle(45, 20, _T("Arial Black"));
-    outtextxy(430, 120, _T("ÇëÑ¡ÔñÓÎÏ·ÉèÖÃ"));
-    outtextxy(430, 170, selectedOption == 0 ? _T(">> ÒôĞ§ÉèÖÃ <<") : _T("     ÒôĞ§ÉèÖÃ"));
-    outtextxy(430, 220, selectedOption == 1 ? _T(">> ¶ÔÕ½ÉèÖÃ <<") : _T("     ¶ÔÕ½ÉèÖÃ"));
-    outtextxy(430, 270, selectedOption == 2 ? _T(">> ·µ»ØÖ÷²Ëµ¥ <<") : _T("     ·µ»ØÖ÷²Ëµ¥"));
+    outtextxy(430, 120, _T("è¯·é€‰æ‹©æ¸¸æˆè®¾ç½®"));
+    outtextxy(430, 170, selectedOption == 0 ? _T(">> éŸ³æ•ˆè®¾ç½® <<") : _T("     éŸ³æ•ˆè®¾ç½®"));
+    outtextxy(430, 220, selectedOption == 1 ? _T(">> å¯¹æˆ˜è®¾ç½® <<") : _T("     å¯¹æˆ˜è®¾ç½®"));
+    outtextxy(430, 270, selectedOption == 2 ? _T(">> è¿”å›ä¸»èœå• <<") : _T("     è¿”å›ä¸»èœå•"));
 }
 
-// Êó±ê¼ì²âºÍµã»÷ÏìÓ¦
+void Menu::drawSettingsBattleMenu() {
+    cleardevice();
+    IMAGE background;
+    loadimage(&background, _T("rec/bg/background3.png"), 1200, 600, 1);
+    putimage(0, 0, &background);
+
+    settextcolor(WHITE);
+    settextstyle(45, 20, _T("Arial Black"));
+    outtextxy(440, 120, _T("å¯¹æˆ˜å‚æ•°è®¾ç½®"));
+
+    settextstyle(27, 12, _T("Arial Black"));
+    COLORREF highColor = RGB(255, 242, 0);
+
+    settextcolor(selectedOption == 0 ? highColor : WHITE);
+    TCHAR buf[64];
+    _stprintf_s(buf, _T("å¯¹æˆ˜æ—¶é—´ï¼š  %s  %s  %s"),
+        selectedTimeIndex == 0 ? _T(">>30ç§’<<") : _T(" 30ç§’ "),
+        selectedTimeIndex == 1 ? _T(">>60ç§’<<") : _T(" 60ç§’ "),
+        selectedTimeIndex == 2 ? _T(">>90ç§’<<") : _T(" 90ç§’ ")
+    );
+    outtextxy(360, 170, buf);
+
+    settextcolor(selectedOption == 1 ? highColor : WHITE);
+    _stprintf_s(buf, _T("äººç‰©ç”Ÿå‘½ï¼š  %s  %s  %s"),
+        selectedLifeIndex == 0 ? _T(">>100<<") : _T(" 100 "),
+        selectedLifeIndex == 1 ? _T(">>200<<") : _T(" 200 "),
+        selectedLifeIndex == 2 ? _T(">>300<<") : _T(" 300 ")
+    );
+    outtextxy(360, 220, buf);
+
+    settextcolor(selectedOption == 2 ? highColor : WHITE);
+    settextstyle(45, 20, _T("Arial Black"));
+    outtextxy(450, 270, selectedOption == 2 ? _T(">> è¿”å› <<") : _T("     è¿”å›"));
+}
 void Menu::handleMouse() {
     if (state == MENU_MAIN) {
-        // ÓÃÓÚÖ÷²Ëµ¥Ñ¡ÏîµÄy×ø±ê·¶Î§
+        // ç”¨äºä¸»èœå•é€‰é¡¹çš„yåæ ‡èŒƒå›´
         int opt_x1 = 450, opt_x2 = 750;
         int opt_y[3][2] = { {300,340}, {350,390}, {400,440} };
 
-        // ´¦ÀíÊó±êÊÂ¼ş
+        // å¤„ç†é¼ æ ‡äº‹ä»¶
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;
 
-            // Êó±êÒÆ¶¯£¬¸ßÁÁÑ¡Ïî
+            // é¼ æ ‡ç§»åŠ¨ï¼Œé«˜äº®é€‰é¡¹
             if (msg.uMsg == WM_MOUSEMOVE) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -151,7 +174,7 @@ void Menu::handleMouse() {
                     }
                 }
             }
-            // Êó±ê×ó¼üµã»÷£¬Ö±½ÓÖ´ĞĞÑ¡Ïî
+            // é¼ æ ‡å·¦é”®ç‚¹å‡»ï¼Œç›´æ¥æ‰§è¡Œé€‰é¡¹
             if (msg.uMsg == WM_LBUTTONDOWN) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -163,16 +186,16 @@ void Menu::handleMouse() {
         }
     }
     else if (state == MENU_START) {
-        // ÓÃÓÚÓÎÏ·Ñ¡ÏîµÄy×ø±ê·¶Î§
+        // ç”¨äºæ¸¸æˆé€‰é¡¹çš„yåæ ‡èŒƒå›´
         int opt_x1 = 450, opt_x2 = 750;
         int opt_y[4][2] = { {250,290}, {300,340}, {350,390},{400,440} };
 
-        // ´¦ÀíÊó±êÊÂ¼ş
+        // å¤„ç†é¼ æ ‡äº‹ä»¶
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;
 
-            // Êó±êÒÆ¶¯£¬¸ßÁÁÑ¡Ïî
+            // é¼ æ ‡ç§»åŠ¨ï¼Œé«˜äº®é€‰é¡¹
             if (msg.uMsg == WM_MOUSEMOVE) {
                 for (int i = 0; i < 4; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -180,7 +203,7 @@ void Menu::handleMouse() {
                     }
                 }
             }
-            // Êó±ê×ó¼üµã»÷£¬Ö±½ÓÖ´ĞĞÑ¡Ïî
+            // é¼ æ ‡å·¦é”®ç‚¹å‡»ï¼Œç›´æ¥æ‰§è¡Œé€‰é¡¹
             if (msg.uMsg == WM_LBUTTONDOWN) {
                 for (int i = 0; i < 4; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -192,16 +215,16 @@ void Menu::handleMouse() {
         }
     }
     else if (state == MENU_SETTINGS) {
-        // ÓÃÓÚÉèÖÃÑ¡ÏîµÄy×ø±ê·¶Î§
+        // ç”¨äºè®¾ç½®é€‰é¡¹çš„yåæ ‡èŒƒå›´
         int opt_x1 = 430, opt_x2 = 730;
-        int opt_y[3][2] = { {170,210}, {220,260}, {270,310}};
+        int opt_y[3][2] = { {170,210}, {220,260}, {270,310} };
 
-        // ´¦ÀíÊó±êÊÂ¼ş
+        // å¤„ç†é¼ æ ‡äº‹ä»¶
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;
 
-            // Êó±êÒÆ¶¯£¬¸ßÁÁÑ¡Ïî
+            // é¼ æ ‡ç§»åŠ¨ï¼Œé«˜äº®é€‰é¡¹
             if (msg.uMsg == WM_MOUSEMOVE) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -209,7 +232,7 @@ void Menu::handleMouse() {
                     }
                 }
             }
-            // Êó±ê×ó¼üµã»÷£¬Ö±½ÓÖ´ĞĞÑ¡Ïî
+            // é¼ æ ‡å·¦é”®ç‚¹å‡»ï¼Œç›´æ¥æ‰§è¡Œé€‰é¡¹
             if (msg.uMsg == WM_LBUTTONDOWN) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -220,9 +243,42 @@ void Menu::handleMouse() {
             }
         }
     }
+    else if (state == MENU_SETTINGS_BATTLE) {
+        int opt_x1 = 400, opt_x2 = 900;
+        int opt_y[3][2] = { { 170,210 }, { 220,260 }, { 270,310 } };
+        while (MouseHit()) {
+            MOUSEMSG msg = GetMouseMsg();
+            int mx = msg.x, my = msg.y;
+            if (msg.uMsg == WM_MOUSEMOVE) {
+                for (int i = 0; i < 3; ++i) {
+                    if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
+                        selectedOption = i;
+                    }
+                }
+            }
+            if (msg.uMsg == WM_LBUTTONDOWN) {
+                for (int i = 0; i < 3; ++i) {
+                    if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
+                        selectedOption = i;
+                        if (selectedOption == 2) {
+                            state = MENU_SETTINGS;
+                            selectedOption = 1;
+                        }
+                        else if (selectedOption == 0) {
+                            selectedTimeIndex = (selectedTimeIndex + 1) % 3;
+                            battleTime = timeOptions[selectedTimeIndex];
+                        }
+                        else if (selectedOption == 1) {
+                            selectedLifeIndex = (selectedLifeIndex + 1) % 3;
+                            battleLife = lifeOptions[selectedLifeIndex];
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
-// ²Ëµ¥Ñ¡ÖĞÂß¼­
 void Menu::handleMainMenuSelect() {
     if (selectedOption == 0) {
         state = MENU_START;
@@ -233,20 +289,18 @@ void Menu::handleMainMenuSelect() {
         selectedOption = 0;
     }
     else if (selectedOption == 2) {
-        // ÍË³öÓÎÏ·
         closegraph();
         exit(0);
     }
 }
-// ²Ëµ¥Ñ¡ÖĞÂß¼­
 void Menu::handleStartGameSelect() {
-    if (selectedOption == 0) 
+    if (selectedOption == 0)
         lastSelectedGameMode = GameMode::PVP;
-    else if (selectedOption == 1) 
+    else if (selectedOption == 1)
         lastSelectedGameMode = GameMode::PVE;
     else if (selectedOption == 2)
         lastSelectedGameMode = GameMode::PRACTICE;
-    else if (selectedOption == 3) { 
+    else if (selectedOption == 3) {
         state = MENU_MAIN;
         selectedOption = 0;
     }
@@ -259,13 +313,46 @@ GameMode Menu::GetAndClearLastGameModeSelected() {
 
 void Menu::handleSettingsSelect() {
     if (selectedOption == 0) {
-
+        // éŸ³æ•ˆè®¾ç½®æœªå®ç°
     }
     else if (selectedOption == 1) {
-
+        state = MENU_SETTINGS_BATTLE;
+        selectedOption = 0;
     }
     else if (selectedOption == 2) {
         state = MENU_MAIN;
-        selectedOption = 0; // ÖØÖÃÑ¡Ïî
+        selectedOption = 0;
+    }
+}
+
+void Menu::handleSettingsBattle() {
+    if (_kbhit()) {
+        char ch = _getch();
+        if (ch == 'w' && selectedOption > 0) selectedOption--;
+        if (ch == 's' && selectedOption < 2) selectedOption++;
+
+        if (selectedOption == 0) {
+            if (ch == 'a' && selectedTimeIndex > 0) selectedTimeIndex--;
+            if (ch == 'd' && selectedTimeIndex < 2) selectedTimeIndex++;
+        }
+        if (selectedOption == 1) {
+            if (ch == 'a' && selectedLifeIndex > 0) selectedLifeIndex--;
+            if (ch == 'd' && selectedLifeIndex < 2) selectedLifeIndex++;
+        }
+
+        if (ch == '\r') {
+            if (selectedOption == 2) {
+                state = MENU_SETTINGS;
+                selectedOption = 1;
+            }
+            else {
+                battleTime = timeOptions[selectedTimeIndex];
+                battleLife = lifeOptions[selectedLifeIndex];
+            }
+        }
+        if (ch == 27) {
+            state = MENU_SETTINGS;
+            selectedOption = 1;
+        }
     }
 }

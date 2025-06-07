@@ -22,6 +22,8 @@ public:
     bool isGameOver() const;
     int getWinner() const; // 0: 平局, 1: 玩家1胜, 2: 玩家2胜
 
+    void setBattleConfig(int life, int time); // 配置生命与时间
+
     Character player1;
     Character player2;
 
@@ -40,4 +42,7 @@ private:
 
     bool gameOver_ = false;
     int winner_ = 0;
+
+    int configLife_ = 100;
+    int configTime_ = 99;
 };

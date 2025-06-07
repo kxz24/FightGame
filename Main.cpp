@@ -5,7 +5,7 @@
 #include "GameState.h"
 #include <windows.h>
 
-enum class AppState { MENU, GAME, RESULT }; 
+enum class AppState { MENU, GAME, RESULT };
 
 int main() {
     initgraph(1200, 600);
@@ -20,7 +20,7 @@ int main() {
 
     auto prevTime = std::chrono::steady_clock::now();
 
-    int lastWinner = 0; 
+    int lastWinner = 0;
 
     while (true) {
         auto frameStart = std::chrono::steady_clock::now();
@@ -32,20 +32,20 @@ int main() {
             menu.Update();
             GameMode selected = menu.GetAndClearLastGameModeSelected();
             if (selected != GameMode::NONE) {
+                // 同步设置
+                game.setBattleConfig(menu.battleLife, menu.battleTime);
                 game.setMode(selected);
                 game.enter();
                 appState = AppState::GAME;
             }
         }
         else if (appState == AppState::GAME) {
-            // 玩家1按键
             bool aDown = (GetAsyncKeyState('A') & 0x8000) || (GetAsyncKeyState('a') & 0x8000);
             bool dDown = (GetAsyncKeyState('D') & 0x8000) || (GetAsyncKeyState('d') & 0x8000);
             bool sDown = (GetAsyncKeyState('S') & 0x8000) || (GetAsyncKeyState('s') & 0x8000);
             bool wDown = (GetAsyncKeyState('W') & 0x8000) || (GetAsyncKeyState('w') & 0x8000);
             bool eDown = (GetAsyncKeyState('E') & 0x8000) || (GetAsyncKeyState('e') & 0x8000);
 
-            // 玩家2按键
             bool hDown = (GetAsyncKeyState('H') & 0x8000) || (GetAsyncKeyState('h') & 0x8000);
             bool kDown = (GetAsyncKeyState('K') & 0x8000) || (GetAsyncKeyState('k') & 0x8000);
             bool jDown = (GetAsyncKeyState('J') & 0x8000) || (GetAsyncKeyState('j') & 0x8000);
@@ -69,7 +69,6 @@ int main() {
             game.update(deltaTime);
             game.render();
 
-            // 判断结算条件
             if (game.isGameOver()) {
                 lastWinner = game.getWinner();
                 appState = AppState::RESULT;
@@ -77,13 +76,12 @@ int main() {
 
             if (_kbhit()) {
                 int ch = _getch();
-                if (ch == 27) { // Esc
+                if (ch == 27) {
                     appState = AppState::MENU;
                 }
             }
         }
         else if (appState == AppState::RESULT) {
-            // 结算界面
             cleardevice();
             settextcolor(WHITE);
             settextstyle(60, 0, "Arial Black");

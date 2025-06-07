@@ -1,17 +1,13 @@
 #pragma once
-#include <graphics.h> // EasyX 头文件
-#include"GameState.h"
+#include <graphics.h>
+#include "GameState.h"
+
 enum MenuState {
     MENU_MAIN,
     MENU_START,
     MENU_SETTINGS,
-	MENU_EXIT
-    // 可扩展其他菜单
-};
-enum MenuAnimState {
-    ANIM_NONE,
-    ANIM_TO_START,    // 放大
-    ANIM_TO_MAIN      // 缩小
+    MENU_SETTINGS_BATTLE,
+    MENU_EXIT
 };
 
 class Menu {
@@ -21,24 +17,30 @@ public:
     void Update();
     MenuState GetState() const;
     GameMode GetAndClearLastGameModeSelected();
+
+    int battleLife = 100;
+    int battleTime = 60;
+
 private:
     MenuState state;
-    int frame = 0; // 用于动画效果
+    int frame = 0;
     int selectedOption;
 
-    // 主菜单绘制
-    void drawMainMenu(int frame);
-    // 开始菜单绘制
-    void drawStartMenu();
-    // 设置菜单绘制
-    void drawSettingsMenu();
+    int timeOptions[3] = { 30, 60, 90 };
+    int lifeOptions[3] = { 100, 200, 300 };
+    int selectedTimeIndex = 1;
+    int selectedLifeIndex = 0;
 
-    // 鼠标处理（高亮和点击）
+    void drawMainMenu(int frame);
+    void drawStartMenu();
+    void drawSettingsMenu();
+    void drawSettingsBattleMenu();
+
     void handleMouse();
-    // 主菜单选项确认（键盘回车或鼠标点击）
     void handleMainMenuSelect();
-	// 其他菜单选项确认
-	void handleStartGameSelect();
-	void handleSettingsSelect();
+    void handleStartGameSelect();
+    void handleSettingsSelect();
+    void handleSettingsBattle();
+
     GameMode lastSelectedGameMode = GameMode::NONE;
 };
