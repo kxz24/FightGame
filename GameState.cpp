@@ -5,7 +5,7 @@
 GameState::GameState()
     : mode_(GameMode::NONE), timeLeft_(99), player1HP_(100), player2HP_(100),
     player1(200, 250, "Player1", ControlType::PLAYER1), player2(800, 250, "Player2", ControlType::PLAYER2),
-    totalGameTime_(99), currentAnimation_num(0) {
+    totalGameTime_(99), currentAnimation_num(0), gameOver_(false), winner_(0) {
     loadResources();
 }
 
@@ -29,7 +29,7 @@ void GameState::enter() {
     player2.setPosition(800, 250);
     player1.setSpeed(0, 0);
     player2.setSpeed(0, 0);
-   
+
     player1.resetState();
     player2.resetState();
 
@@ -47,6 +47,9 @@ void GameState::enter() {
 
     timer_.restart();
     currentAnimation_num = 0;
+
+    gameOver_ = false;
+    winner_ = 0;
 }
 
 void GameState::update(double deltaTime) {
@@ -55,8 +58,25 @@ void GameState::update(double deltaTime) {
         if (timeLeft_ < 0) timeLeft_ = 0;
     }
 
-    // 攻击判定：只在攻击动画的第2帧（假设攻击总5帧，这里是第2帧）
-    // 玩家1攻击玩家2
+    // 结算条件判断
+    if (!gameOver_) {
+        if (player1.getIsDead() || player1.getHP() <= 0) {
+            gameOver_ = true;
+            winner_ = 2;
+        }
+        else if (player2.getIsDead() || player2.getHP() <= 0) {
+            gameOver_ = true;
+            winner_ = 1;
+        }
+        else if (timeLeft_ <= 0) {
+            gameOver_ = true;
+            if (player1.getHP() > player2.getHP()) winner_ = 1;
+            else if (player2.getHP() > player1.getHP()) winner_ = 2;
+            else winner_ = 0; // 平局
+        }
+    }
+
+    // 攻击判定和AI逻辑
     if (player1.getIsAttacking() && player1.getCurrentAction() == CharacterAction::ATTACK && player1.getAttackFrameIndex() == 2) {
         int atkRange = 275 + 40;
         float x1 = player1.getX();
@@ -124,4 +144,11 @@ void GameState::render() {
 
 double GameState::getTimeLeft() const {
     return timeLeft_;
+}
+
+bool GameState::isGameOver() const {
+    return gameOver_;
+}
+int GameState::getWinner() const {
+    return winner_;
 }
