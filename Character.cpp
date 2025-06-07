@@ -1,4 +1,5 @@
 #include "Character.h"
+#include "AudioManager.h"
 #include <graphics.h>
 #include <conio.h>
 #include <iostream>
@@ -36,7 +37,7 @@ void Character::setAction(CharacterAction action) {
 }
 
 void Character::setKeyState(int key, bool pressed) {
-    if (isHurting || isDead) return; // 死亡或受击期间不能任何操作
+    if (isHurting || isDead) return;
     if (controlType_ == ControlType::PLAYER1) {
         if (key == 'a' || key == 'A') leftPressed = pressed;
         if (key == 'd' || key == 'D') rightPressed = pressed;
@@ -79,23 +80,16 @@ void Character::aiControl(const Character& target) {
     float ai_x = getX();
     float distance = px - ai_x;
 
-    // 随机因子
     int r = rand() % 100;
 
-    // 死亡直接不操作
     if (isDead) {
         setAction(CharacterAction::DEAD);
         return;
     }
-
-    // 遇到特殊动画，优先处理
     if (isHurting || isAttacking || isDefending || isJumping) {
         return;
     }
-
-    // AI控制逻辑
     if (abs(distance) > 120) {
-        // 向玩家靠近
         if (distance > 0) {
             setFacingRight(true);
             vx_ = 4;
@@ -108,16 +102,15 @@ void Character::aiControl(const Character& target) {
         }
     }
     else if (abs(distance) <= 120) {
-        // 距离合适，尝试攻击/跳跃/防御
         vx_ = 0;
         setAction(CharacterAction::IDLE);
-        if (r < 28) { // 28% 攻击
+        if (r < 28) {
             startAttack();
         }
-        else if (r < 34) { // 6% 跳跃
+        else if (r < 34) {
             startJump();
         }
-        else if (r < 40) { // 6% 防御
+        else if (r < 40) {
             startDefend();
         }
     }
@@ -216,7 +209,7 @@ void Character::update(float deltaTime) {
         animFrameCounter = 0;
     }
 
-    // 受击动画
+    // 受伤动画可以被打断，受伤期间如果再受伤动画会重置
     if (currentAction_ == CharacterAction::HURT && isHurting) {
         hurtAnimCounter++;
         if (hurtAnimCounter >= 3) {
@@ -310,7 +303,7 @@ void Character::update(float deltaTime) {
             deadAnimCounter = 0;
         }
         if (deadFrameIndex >= deadTotalFrames) {
-            deadFrameIndex = deadTotalFrames - 1; 
+            deadFrameIndex = deadTotalFrames - 1;
         }
         return;
     }
@@ -399,7 +392,6 @@ void Character::putimage_alpha(int x, int y, IMAGE* img) {
 }
 
 void Character::startDefend() {
-    // 跳跃中不能进入防御
     if (isJumping) return;
     if (isDefending || isAttacking || isHurting) return;
     setAction(CharacterAction::DEFEND);
@@ -408,7 +400,6 @@ void Character::startDefend() {
     defendAnimCounter = 0;
     vx_ = 0;
 }
-
 void Character::startAttack() {
     if (isAttacking || isHurting) return;
     isAttacking = true;
@@ -416,6 +407,8 @@ void Character::startAttack() {
     attackFrameIndex = 0;
     attackAnimCounter = 0;
     vx_ = 0;
+    // 播放攻击音效
+    AudioManager::PlayEffect("rec/attack.mp3");
 }
 
 void Character::startJump() {
@@ -443,7 +436,7 @@ void Character::startDead() {
     deadAnimCounter = 0;
     setAction(CharacterAction::DEAD);
     setSpeed(0, 0);
-    isHurting = false; 
+    isHurting = false;
 }
 
 void Character::resetState() {

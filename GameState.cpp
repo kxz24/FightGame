@@ -81,6 +81,9 @@ void GameState::update(double deltaTime) {
         }
     }
 
+    // ====== 攻击判定时排除对方攻击帧：互击不受伤 ======
+    bool p1ShouldHurt = false, p2ShouldHurt = false;
+
     if (player1.getIsAttacking() && player1.getCurrentAction() == CharacterAction::ATTACK && player1.getAttackFrameIndex() == 2) {
         int atkRange = 275 + 40;
         float x1 = player1.getX();
@@ -88,8 +91,9 @@ void GameState::update(double deltaTime) {
         bool inRange = false;
         if (player1.isFacingRight() && x2 > x1 && x2 - x1 <= atkRange) inRange = true;
         if (!player1.isFacingRight() && x1 > x2 && x1 - x2 <= atkRange) inRange = true;
-        if (inRange && !player2.getIsDefending() && !player2.getIsHurting()) {
-            player2.startHurt(10);
+        // 只有对方不是防御、不是受伤、不是攻击时才受伤
+        if (inRange && !player2.getIsDefending() && !player2.getIsHurting() && !player2.getIsAttacking()) {
+            p2ShouldHurt = true;
         }
     }
     if (player2.getIsAttacking() && player2.getCurrentAction() == CharacterAction::ATTACK && player2.getAttackFrameIndex() == 2) {
@@ -99,10 +103,13 @@ void GameState::update(double deltaTime) {
         bool inRange = false;
         if (player2.isFacingRight() && x2 > x1 && x2 - x1 <= atkRange) inRange = true;
         if (!player2.isFacingRight() && x1 > x2 && x1 - x2 <= atkRange) inRange = true;
-        if (inRange && !player1.getIsDefending() && !player1.getIsHurting()) {
-            player1.startHurt(10);
+        if (inRange && !player1.getIsDefending() && !player1.getIsHurting() && !player1.getIsAttacking()) {
+            p1ShouldHurt = true;
         }
     }
+    // 统一处理受伤
+    if (p1ShouldHurt) player1.startHurt(10);
+    if (p2ShouldHurt) player2.startHurt(10);
 
     if (mode_ == GameMode::PVP) {
     }
@@ -128,7 +135,7 @@ void GameState::render() {
     player2.render();
 
     setfillcolor(RED);
-    int barWidth = 300; 
+    int barWidth = 300;
     int maxHP = configLife_;
     fillrectangle(50, 50, 50 + player1.getHP() * barWidth / maxHP, 80);
     fillrectangle(800, 50, 800 + player2.getHP() * barWidth / maxHP, 80);

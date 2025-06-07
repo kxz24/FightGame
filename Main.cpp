@@ -4,6 +4,7 @@
 #include "Menu.h"
 #include "GameState.h"
 #include <windows.h>
+#include "AudioManager.h"
 
 enum class AppState { MENU, GAME, RESULT };
 
@@ -28,11 +29,13 @@ int main() {
         prevTime = frameStart;
 
         if (appState == AppState::MENU) {
+            // --- 播放主菜单BGM ---
+            AudioManager::StopCheer();
+            AudioManager::PlayBGM("rec/bgm.mp3");
             menu.Draw();
             menu.Update();
             GameMode selected = menu.GetAndClearLastGameModeSelected();
             if (selected != GameMode::NONE) {
-                // 同步设置
                 game.setBattleConfig(menu.battleLife, menu.battleTime);
                 game.setMode(selected);
                 game.enter();
@@ -40,6 +43,9 @@ int main() {
             }
         }
         else if (appState == AppState::GAME) {
+            // --- 播放对战音效 ---
+            AudioManager::StopBGM();
+            AudioManager::PlayCheer("rec/cheer.mp3");
             bool aDown = (GetAsyncKeyState('A') & 0x8000) || (GetAsyncKeyState('a') & 0x8000);
             bool dDown = (GetAsyncKeyState('D') & 0x8000) || (GetAsyncKeyState('d') & 0x8000);
             bool sDown = (GetAsyncKeyState('S') & 0x8000) || (GetAsyncKeyState('s') & 0x8000);
@@ -82,6 +88,9 @@ int main() {
             }
         }
         else if (appState == AppState::RESULT) {
+            // --- 播放主菜单BGM ---
+            AudioManager::StopCheer();
+            AudioManager::PlayBGM("rec/bgm.mp3");
             cleardevice();
             settextcolor(WHITE);
             settextstyle(60, 0, "Arial Black");
@@ -109,6 +118,7 @@ int main() {
         FlushBatchDraw();
     }
     EndBatchDraw();
+    AudioManager::StopAll();
     closegraph();
     return 0;
 }
