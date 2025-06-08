@@ -60,11 +60,20 @@ void GameState::enter() {
 
 void GameState::update(double deltaTime) {
     if (mode_ != GameMode::NONE && timeLeft_ > 0) {
-        timeLeft_ = totalGameTime_ - timer_.elapsed();
-        if (timeLeft_ < 0) timeLeft_ = 0;
+        if (mode_ == GameMode::PRACTICE) 
+            timeLeft_ = 9999;
+        else {
+            timeLeft_ = totalGameTime_ - timer_.elapsed();
+            if (timeLeft_ < 0)
+                timeLeft_ = 0;
+        }
+    }
+    if (mode_ == GameMode::PRACTICE) {
+        player1.setHP(configLife_);
+        player2.setHP(configLife_);
     }
 
-    if (!gameOver_) {
+    if (!gameOver_&&mode_!=GameMode::PRACTICE) {
         if (player1.getIsDead() || player1.getHP() <= 0) {
             gameOver_ = true;
             winner_ = 2;
@@ -81,7 +90,6 @@ void GameState::update(double deltaTime) {
         }
     }
 
-    // ====== 攻击判定时排除对方攻击帧：互击不受伤 ======
     bool p1ShouldHurt = false, p2ShouldHurt = false;
 
     if (player1.getIsAttacking() && player1.getCurrentAction() == CharacterAction::ATTACK && player1.getAttackFrameIndex() == 2) {
@@ -91,7 +99,6 @@ void GameState::update(double deltaTime) {
         bool inRange = false;
         if (player1.isFacingRight() && x2 > x1 && x2 - x1 <= atkRange) inRange = true;
         if (!player1.isFacingRight() && x1 > x2 && x1 - x2 <= atkRange) inRange = true;
-        // 只有对方不是防御、不是受伤、不是攻击时才受伤
         if (inRange && !player2.getIsDefending() && !player2.getIsHurting() && !player2.getIsAttacking()) {
             p2ShouldHurt = true;
         }
@@ -107,7 +114,7 @@ void GameState::update(double deltaTime) {
             p1ShouldHurt = true;
         }
     }
-    // 统一处理受伤
+ 
     if (p1ShouldHurt) player1.startHurt(10);
     if (p2ShouldHurt) player2.startHurt(10);
 
@@ -140,11 +147,15 @@ void GameState::render() {
     fillrectangle(50, 50, 50 + player1.getHP() * barWidth / maxHP, 80);
     fillrectangle(800, 50, 800 + player2.getHP() * barWidth / maxHP, 80);
 
-    settextcolor(WHITE);
-    settextstyle(30, 0, "Arial Black");
-    char timeStr[32];
+   settextcolor(WHITE);
+settextstyle(30, 0, "Arial Black");
+char timeStr[32];
+if (mode_ == GameMode::PRACTICE) {
+    snprintf(timeStr, sizeof(timeStr), "Time: ∞");
+} else {
     snprintf(timeStr, sizeof(timeStr), "Time: %.2f", timeLeft_);
-    outtextxy(550, 10, timeStr);
+}
+outtextxy(550, 10, timeStr);
 
     settextstyle(20, 0, "Arial Black");
     const char* modeStr = "";

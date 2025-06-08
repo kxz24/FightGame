@@ -4,7 +4,7 @@
 #include <conio.h>
 #include <cmath>
 
-Menu::Menu() : state(MENU_MAIN), selectedOption(0), frame(0), selectedTimeIndex(1), selectedLifeIndex(0) {}
+Menu::Menu() : state(MENU_MAIN), selectedOption(0), frame(0), selectedTimeIndex(1), selectedLifeIndex(0), bgmVolume(100), cheerVolume(100), effectVolume(100) {}
 
 void Menu::Draw() {
     switch (state) {
@@ -12,6 +12,7 @@ void Menu::Draw() {
     case MENU_START: drawStartMenu(); break;
     case MENU_SETTINGS: drawSettingsMenu(); break;
     case MENU_SETTINGS_BATTLE: drawSettingsBattleMenu(); break;
+    case MENU_SETTINGS_AUDIO: drawSettingsAudioMenu(); break;
     }
     frame++;
 }
@@ -47,6 +48,9 @@ void Menu::Update() {
         }
         else if (state == MENU_SETTINGS_BATTLE) {
             handleSettingsBattle();
+        }
+        else if (state == MENU_SETTINGS_AUDIO) {
+            handleSettingsAudio();
         }
     }
 }
@@ -131,42 +135,82 @@ void Menu::drawSettingsBattleMenu() {
     settextstyle(45, 20, _T("Arial Black"));
     outtextxy(440, 120, _T("对战参数设置"));
 
-    settextstyle(27, 12, _T("Arial Black"));
+    settextstyle(45, 0, _T("Arial Black"));
     COLORREF highColor = RGB(255, 242, 0);
 
     settextcolor(selectedOption == 0 ? highColor : WHITE);
     TCHAR buf[64];
-    _stprintf_s(buf, _T("对战时间：  %s  %s  %s"),
+    _stprintf_s(buf, _T("时间  %s  %s  %s"),
         selectedTimeIndex == 0 ? _T(">>30秒<<") : _T(" 30秒 "),
         selectedTimeIndex == 1 ? _T(">>60秒<<") : _T(" 60秒 "),
         selectedTimeIndex == 2 ? _T(">>90秒<<") : _T(" 90秒 ")
     );
-    outtextxy(360, 180, buf);
+    outtextxy(330, 180, buf);
 
     settextcolor(selectedOption == 1 ? highColor : WHITE);
-    _stprintf_s(buf, _T("人物生命：  %s  %s  %s"),
+    _stprintf_s(buf, _T("生命 %s  %s  %s"),
         selectedLifeIndex == 0 ? _T(">>100<<") : _T(" 100 "),
         selectedLifeIndex == 1 ? _T(">>200<<") : _T(" 200 "),
         selectedLifeIndex == 2 ? _T(">>300<<") : _T(" 300 ")
     );
-    outtextxy(360, 230, buf);
+    outtextxy(330, 230, buf);
 
     settextcolor(selectedOption == 2 ? highColor : WHITE);
     settextstyle(45, 20, _T("Arial Black"));
     outtextxy(450, 280, selectedOption == 2 ? _T(">> 返回 <<") : _T("     返回"));
 }
+
+void Menu::drawSettingsAudioMenu() {
+    cleardevice();
+    IMAGE background;
+    loadimage(&background, _T("rec/bg/background3.png"), 1200, 600, 1);
+    putimage(0, 0, &background);
+
+    settextcolor(WHITE);
+    settextstyle(45, 20, _T("Arial Black"));
+    outtextxy(440, 120, _T("音效参数设置"));
+
+    settextstyle(27, 12, _T("Arial Black"));
+    COLORREF highColor = RGB(255, 242, 0);
+
+    TCHAR buf[64];
+    int baseY = 170, stepY = 50;
+
+    settextcolor(selectedOption == 0 ? highColor : WHITE);
+    settextstyle(45, 0, _T("Arial Black"));
+    _stprintf_s(buf, _T("BGM音量：%d"), bgmVolume);
+    outtextxy(440, baseY, buf);
+   
+    outtextxy(400, baseY, _T("<"));
+    outtextxy(700, baseY, _T(">"));
+
+    settextcolor(selectedOption == 1 ? highColor : WHITE);
+    _stprintf_s(buf, _T("欢呼音量：%d"), cheerVolume);
+    outtextxy(440, baseY + stepY, buf);
+    outtextxy(400, baseY + stepY, _T("<"));
+    outtextxy(700, baseY + stepY, _T(">"));
+
+    settextcolor(selectedOption == 2 ? highColor : WHITE);
+    _stprintf_s(buf, _T("攻击音量：%d"), effectVolume);
+    outtextxy(440, baseY + 2 * stepY, buf);
+    outtextxy(400, baseY + 2 * stepY, _T("<"));
+    outtextxy(700, baseY + 2 * stepY, _T(">"));
+
+    // 返回
+    settextcolor(selectedOption == 3 ? highColor : WHITE);
+    settextstyle(45, 20, _T("Arial Black"));
+    outtextxy(450, baseY + 3 * stepY, selectedOption == 3 ? _T(">> 返回 <<") : _T("     返回"));
+}
+
 void Menu::handleMouse() {
     if (state == MENU_MAIN) {
-        // 用于主菜单选项的y坐标范围
         int opt_x1 = 450, opt_x2 = 750;
         int opt_y[3][2] = { {300,340}, {350,390}, {400,440} };
 
-        // 处理鼠标事件
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;
 
-            // 鼠标移动，高亮选项
             if (msg.uMsg == WM_MOUSEMOVE) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -174,7 +218,6 @@ void Menu::handleMouse() {
                     }
                 }
             }
-            // 鼠标左键点击，直接执行选项
             if (msg.uMsg == WM_LBUTTONDOWN) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -186,16 +229,13 @@ void Menu::handleMouse() {
         }
     }
     else if (state == MENU_START) {
-        // 用于游戏选项的y坐标范围
         int opt_x1 = 450, opt_x2 = 750;
         int opt_y[4][2] = { {250,290}, {300,340}, {350,390},{400,440} };
 
-        // 处理鼠标事件
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;
 
-            // 鼠标移动，高亮选项
             if (msg.uMsg == WM_MOUSEMOVE) {
                 for (int i = 0; i < 4; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -203,7 +243,6 @@ void Menu::handleMouse() {
                     }
                 }
             }
-            // 鼠标左键点击，直接执行选项
             if (msg.uMsg == WM_LBUTTONDOWN) {
                 for (int i = 0; i < 4; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -215,16 +254,13 @@ void Menu::handleMouse() {
         }
     }
     else if (state == MENU_SETTINGS) {
-        // 用于设置选项的y坐标范围
         int opt_x1 = 430, opt_x2 = 730;
         int opt_y[3][2] = { {170,210}, {220,260}, {270,310} };
 
-        // 处理鼠标事件
         while (MouseHit()) {
             MOUSEMSG msg = GetMouseMsg();
             int mx = msg.x, my = msg.y;
 
-            // 鼠标移动，高亮选项
             if (msg.uMsg == WM_MOUSEMOVE) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -232,7 +268,6 @@ void Menu::handleMouse() {
                     }
                 }
             }
-            // 鼠标左键点击，直接执行选项
             if (msg.uMsg == WM_LBUTTONDOWN) {
                 for (int i = 0; i < 3; ++i) {
                     if (mx >= opt_x1 && mx <= opt_x2 && my >= opt_y[i][0] && my <= opt_y[i][1]) {
@@ -277,6 +312,66 @@ void Menu::handleMouse() {
             }
         }
     }
+    else if (state == MENU_SETTINGS_AUDIO) {
+        int baseY = 180, stepY = 50;
+        int leftBtnX1 = 400, leftBtnX2 = 440;
+        int rightBtnX1 = 700, rightBtnX2 = 740;
+        int valueX1 = 440, valueX2 = 690;
+        int optY[4][2] = { {baseY,baseY + 40}, {baseY + stepY,baseY + stepY + 40}, {baseY + 2 * stepY,baseY + 2 * stepY + 40}, {baseY + 3 * stepY,baseY + 3 * stepY + 40} };
+        while (MouseHit()) {
+            MOUSEMSG msg = GetMouseMsg();
+            int mx = msg.x, my = msg.y;
+            // 鼠标移动，高亮选项
+            if (msg.uMsg == WM_MOUSEMOVE) {
+                for (int i = 0; i < 4; ++i) {
+                    if (mx >= valueX1 && mx <= valueX2 && my >= optY[i][0] && my <= optY[i][1]) {
+                        selectedOption = i;
+                    }
+                }
+            }
+            // 鼠标左键点击
+            if (msg.uMsg == WM_LBUTTONDOWN) {
+                // BGM音量
+                if (my >= optY[0][0] && my <= optY[0][1]) {
+                    if (mx >= leftBtnX1 && mx <= leftBtnX2 && bgmVolume > 0) {
+                        bgmVolume -= 5;
+                        if (bgmVolume < 0) bgmVolume = 0;
+                    }
+                    else if (mx >= rightBtnX1 && mx <= rightBtnX2 && bgmVolume < 100) {
+                        bgmVolume += 5;
+                        if (bgmVolume > 100) bgmVolume = 100;
+                    }
+                }
+                // Cheer音量
+                else if (my >= optY[1][0] && my <= optY[1][1]) {
+                    if (mx >= leftBtnX1 && mx <= leftBtnX2 && cheerVolume > 0) {
+                        cheerVolume -= 5;
+                        if (cheerVolume < 0) cheerVolume = 0;
+                    }
+                    else if (mx >= rightBtnX1 && mx <= rightBtnX2 && cheerVolume < 100) {
+                        cheerVolume += 5;
+                        if (cheerVolume > 100) cheerVolume = 100;
+                    }
+                }
+                // Effect音量
+                else if (my >= optY[2][0] && my <= optY[2][1]) {
+                    if (mx >= leftBtnX1 && mx <= leftBtnX2 && effectVolume > 0) {
+                        effectVolume -= 5;
+                        if (effectVolume < 0) effectVolume = 0;
+                    }
+                    else if (mx >= rightBtnX1 && mx <= rightBtnX2 && effectVolume < 100) {
+                        effectVolume += 5;
+                        if (effectVolume > 100) effectVolume = 100;
+                    }
+                }
+                // 返回
+                else if (my >= optY[3][0] && my <= optY[3][1]) {
+                    state = MENU_SETTINGS;
+                    selectedOption = 0;
+                }
+            }
+        }
+    }
 }
 
 void Menu::handleMainMenuSelect() {
@@ -313,7 +408,8 @@ GameMode Menu::GetAndClearLastGameModeSelected() {
 
 void Menu::handleSettingsSelect() {
     if (selectedOption == 0) {
-        // 音效设置未实现
+        state = MENU_SETTINGS_AUDIO;
+        selectedOption = 0;
     }
     else if (selectedOption == 1) {
         state = MENU_SETTINGS_BATTLE;
@@ -353,6 +449,32 @@ void Menu::handleSettingsBattle() {
         if (ch == 27) {
             state = MENU_SETTINGS;
             selectedOption = 1;
+        }
+    }
+}
+
+void Menu::handleSettingsAudio() {
+    if (_kbhit()) {
+        char ch = _getch();
+        if (ch == 'w' && selectedOption > 0) selectedOption--;
+        if (ch == 's' && selectedOption < 3) selectedOption++;
+
+        if (selectedOption == 0 && (ch == 'a' || ch == 'A') && bgmVolume > 0) bgmVolume -= 5;
+        if (selectedOption == 0 && (ch == 'd' || ch == 'D') && bgmVolume < 100) bgmVolume += 5;
+
+        if (selectedOption == 1 && (ch == 'a' || ch == 'A') && cheerVolume > 0) cheerVolume -= 5;
+        if (selectedOption == 1 && (ch == 'd' || ch == 'D') && cheerVolume < 100) cheerVolume += 5;
+
+        if (selectedOption == 2 && (ch == 'a' || ch == 'A') && effectVolume > 0) effectVolume -= 5;
+        if (selectedOption == 2 && (ch == 'd' || ch == 'D') && effectVolume < 100) effectVolume += 5;
+
+        if (ch == '\r' && selectedOption == 3) {
+            state = MENU_SETTINGS;
+            selectedOption = 0;
+        }
+        if (ch == 27) {
+            state = MENU_SETTINGS;
+            selectedOption = 0;
         }
     }
 }

@@ -8,6 +8,23 @@ bool AudioManager::isCheerPlaying = false;
 std::string AudioManager::currentBGM = "";
 std::string AudioManager::currentCheer = "";
 
+int AudioManager::bgmVolume = 100;
+int AudioManager::cheerVolume = 100;
+int AudioManager::effectVolume = 100;
+
+void AudioManager::SetBGMVolume(int volume) {
+    bgmVolume = volume;
+    mciSendStringA(("setaudio bgm volume to " + std::to_string(volume * 10)).c_str(), 0, 0, 0);
+}
+void AudioManager::SetCheerVolume(int volume) {
+    cheerVolume = volume;
+    mciSendStringA(("setaudio cheer volume to " + std::to_string(volume * 10)).c_str(), 0, 0, 0);
+}
+void AudioManager::SetEffectVolume(int volume) {
+    effectVolume = volume;
+    mciSendStringA(("setaudio effect volume to " + std::to_string(volume * 10)).c_str(), 0, 0, 0);
+}
+
 void AudioManager::PlayBGM(const std::string& filename, bool loop) {
     if (isBGMPlaying && currentBGM == filename) return;
     StopBGM();
@@ -16,6 +33,7 @@ void AudioManager::PlayBGM(const std::string& filename, bool loop) {
     std::string playCmd = "play bgm";
     if (loop) playCmd += " repeat";
     mciSendStringA(playCmd.c_str(), 0, 0, 0);
+    SetBGMVolume(bgmVolume); 
     isBGMPlaying = true;
     currentBGM = filename;
 }
@@ -34,6 +52,7 @@ void AudioManager::PlayCheer(const std::string& filename, bool loop) {
     std::string playCmd = "play cheer";
     if (loop) playCmd += " repeat";
     mciSendStringA(playCmd.c_str(), 0, 0, 0);
+    SetCheerVolume(cheerVolume);
     isCheerPlaying = true;
     currentCheer = filename;
 }
@@ -52,6 +71,7 @@ void AudioManager::PlayEffect(const std::string& filename) {
         mciSendStringA(cmd.c_str(), 0, 0, 0);
         lastEffect = filename;
     }
+    SetEffectVolume(effectVolume); 
     mciSendStringA("play effect from 0", 0, 0, 0);
 }
 

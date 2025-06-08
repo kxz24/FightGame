@@ -29,7 +29,7 @@ int main() {
         prevTime = frameStart;
 
         if (appState == AppState::MENU) {
-            // --- 播放主菜单BGM ---
+            
             AudioManager::StopCheer();
             AudioManager::PlayBGM("rec/bgm.mp3");
             menu.Draw();
@@ -41,9 +41,11 @@ int main() {
                 game.enter();
                 appState = AppState::GAME;
             }
+            AudioManager::SetBGMVolume(menu.bgmVolume);
+            AudioManager::SetCheerVolume(menu.cheerVolume);
+            AudioManager::SetEffectVolume(menu.effectVolume);
         }
         else if (appState == AppState::GAME) {
-            // --- 播放对战音效 ---
             AudioManager::StopBGM();
             AudioManager::PlayCheer("rec/cheer.mp3");
             bool aDown = (GetAsyncKeyState('A') & 0x8000) || (GetAsyncKeyState('a') & 0x8000);
@@ -88,7 +90,6 @@ int main() {
             }
         }
         else if (appState == AppState::RESULT) {
-            // --- 播放主菜单BGM ---
             AudioManager::StopCheer();
             AudioManager::PlayBGM("rec/bgm.mp3");
             cleardevice();

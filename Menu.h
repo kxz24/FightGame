@@ -7,6 +7,7 @@ enum MenuState {
     MENU_START,
     MENU_SETTINGS,
     MENU_SETTINGS_BATTLE,
+    MENU_SETTINGS_AUDIO,
     MENU_EXIT
 };
 
@@ -20,6 +21,10 @@ public:
 
     int battleLife = 100;
     int battleTime = 60;
+
+    int bgmVolume = 100;      // 0~100
+    int cheerVolume = 100;    // 0~100
+    int effectVolume = 100;   // 0~100
 
 private:
     MenuState state;
@@ -35,12 +40,14 @@ private:
     void drawStartMenu();
     void drawSettingsMenu();
     void drawSettingsBattleMenu();
+    void drawSettingsAudioMenu(); 
 
     void handleMouse();
     void handleMainMenuSelect();
     void handleStartGameSelect();
     void handleSettingsSelect();
     void handleSettingsBattle();
+    void handleSettingsAudio(); 
 
     GameMode lastSelectedGameMode = GameMode::NONE;
 };
